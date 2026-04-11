@@ -102,6 +102,23 @@ const SECTION_TO_ANNOTATION: Record<number, string | null> = {
   6: 'dial',
 };
 
+// Hook for scroll-triggered entrance animations
+function useInView(threshold = 0.1) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setIsVisible(true); observer.unobserve(el); } },
+      { threshold }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [threshold]);
+  return { ref, isVisible };
+}
+
 export default function Index() {
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -110,6 +127,8 @@ export default function Index() {
   const [showWelcome, setShowWelcome] = useState(true);
   const [isPastAnimation, setIsPastAnimation] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [specsMousePos, setSpecsMousePos] = useState({ x: 500, y: 500 });
+  const specsInView = useInView(0.08);
 
   const handleAddToCart = () => {
     setCartCount(prev => prev + 1);
@@ -165,10 +184,13 @@ export default function Index() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
-  // Camera rotation based on scroll
-  const rotateY = -15 + scrollProgress * 30; // -15 to 15 degrees
-  const rotateX = 5 - scrollProgress * 10;
-  const scale = 0.85 + Math.sin(scrollProgress * Math.PI) * 0.15;
+  // Camera rotation based on scroll — flat on hero, rotates after first scroll
+  const scrollIntoFeatures = Math.max(0, (scrollProgress * SECTIONS.length - 1) / (SECTIONS.length - 1)); // 0 during hero, ramps 0→1 during features
+  const rotateY = -15 + scrollIntoFeatures * 30; // starts at -15, goes to 15
+  const rotateX = 5 - scrollIntoFeatures * 10;
+  const heroScale = activeSection === 0 ? 1 : 0.85 + Math.sin(scrollProgress * Math.PI) * 0.15;
+  const heroRotateY = activeSection === 0 ? 0 : rotateY;
+  const heroRotateX = activeSection === 0 ? 0 : rotateX;
   const activeAnnotation = SECTION_TO_ANNOTATION[activeSection] || null;
 
   // Section title/subtitle that shows on the side
@@ -212,6 +234,37 @@ export default function Index() {
         </div>
       )}
 
+      {/* Navigation Arrow — UP on LEFT side */}
+      <button
+        onClick={() => {
+          const target = Math.max(0, activeSection - 1);
+          window.scrollTo({ top: target * window.innerHeight, behavior: 'smooth' });
+        }}
+        className={`fixed left-6 md:left-10 bottom-1/2 translate-y-1/2 z-[85] w-12 h-12 flex items-center justify-center rounded-full bg-background/80 border border-border/80 backdrop-blur hover:bg-white/10 hover:border-primary transition-all shadow-[0_0_15px_rgba(0,0,0,0.5)] ${isPastAnimation || showWelcome || activeSection === 0 ? 'opacity-0 pointer-events-none scale-90' : 'opacity-100 hover:scale-110'}`}
+      >
+        <svg className="w-5 h-5 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+        </svg>
+      </button>
+
+      {/* Navigation Arrow — DOWN on RIGHT side */}
+      <button
+        onClick={() => {
+          if (isPastAnimation) {
+            const specsEl = document.getElementById('specs');
+            if (specsEl) specsEl.scrollIntoView({ behavior: 'smooth' });
+          } else {
+            const target = Math.min(SECTIONS.length - 1, activeSection + 1);
+            window.scrollTo({ top: target * window.innerHeight, behavior: 'smooth' });
+          }
+        }}
+        className={`fixed right-6 md:right-10 bottom-1/2 translate-y-1/2 z-[85] w-12 h-12 flex items-center justify-center rounded-full bg-background/80 border border-border/80 backdrop-blur hover:bg-white/10 hover:border-primary transition-all shadow-[0_0_15px_rgba(0,0,0,0.5)] ${isPastAnimation || showWelcome ? 'opacity-0 pointer-events-none scale-90' : 'opacity-100 hover:scale-110'}`}
+      >
+        <svg className="w-5 h-5 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
       {/* Fixed camera view */}
       <div 
         className={`fixed inset-0 z-0 flex items-center justify-center transition-opacity duration-700 ease-in-out ${isPastAnimation ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} 
@@ -227,9 +280,9 @@ export default function Index() {
 
         {/* Camera image with 3D transform */}
         <div
-          className="relative transition-transform duration-700 ease-out"
+          className="relative transition-all duration-700 ease-out"
           style={{
-            transform: `rotateY(${rotateY}deg) rotateX(${rotateX}deg) scale(${scale})`,
+            transform: `translateX(${activeSection === 0 ? '-20vw' : '0px'}) rotateY(${heroRotateY}deg) rotateX(${heroRotateX}deg) scale(${heroScale})`,
             transformStyle: 'preserve-3d',
           }}
         >
@@ -253,20 +306,23 @@ export default function Index() {
 
       {/* Scroll content */}
       <div className="relative z-10 pointer-events-none">
-        {/* HERO */}
-        <section className="h-screen flex items-center justify-center">
-          <div className={`text-center transition-all duration-1000 ${activeSection === 0 ? 'opacity-100 blur-0 scale-100' : 'opacity-0 blur-xl scale-110 -translate-y-8'}`}>
-            <p className="font-mono-code text-xs tracking-[0.5em] text-primary mb-4 h-[20px] flex items-center justify-center">
+        {/* HERO — camera on left, text on right with sequential animation */}
+        <section className="h-screen flex items-center justify-end pr-10 md:pr-20 lg:pr-28">
+          <div className={`text-right max-w-md transition-all duration-1000 ${activeSection === 0 ? 'opacity-100' : 'opacity-0 blur-xl scale-110 -translate-y-8'}`}>
+            <p className="font-mono-code text-xs tracking-[0.5em] text-primary mb-4 h-[20px] flex items-center justify-end">
               {activeSection === 0 && <TypewriterText text="INTRODUCING" delay={500} />}
               {activeSection === 0 && <span className="w-1 h-3 bg-primary ml-1 animate-pulse"></span>}
             </p>
-            <h1 className="text-6xl md:text-[10rem] font-bold text-foreground/[0.06] leading-none select-none">AUREX</h1>
-            <h2 className="text-3xl md:text-6xl font-bold text-foreground -mt-2 md:-mt-6">ONE</h2>
-            <p className="text-muted-foreground text-sm mt-6 max-w-sm mx-auto">
+            {/* AUREX appears after INTRODUCING finishes (~500ms delay + 11 chars * 100ms = 1600ms) */}
+            <h1 className="text-6xl md:text-[10rem] font-bold text-foreground/[0.06] leading-none select-none transition-all duration-700" style={{ opacity: activeSection === 0 ? 1 : 0, filter: activeSection === 0 ? 'blur(0px)' : 'blur(12px)', transitionDelay: '1800ms' }}>AUREX</h1>
+            {/* ONE appears 300ms after AUREX */}
+            <h2 className="text-3xl md:text-6xl font-bold text-foreground -mt-2 md:-mt-6 transition-all duration-700" style={{ opacity: activeSection === 0 ? 1 : 0, filter: activeSection === 0 ? 'blur(0px)' : 'blur(12px)', transitionDelay: '2100ms' }}>ONE</h2>
+            {/* Subtitle appears after title */}
+            <p className="text-muted-foreground text-sm mt-6 max-w-sm ml-auto transition-all duration-700" style={{ opacity: activeSection === 0 ? 1 : 0, transitionDelay: '2500ms' }}>
               A masterpiece of optical engineering. Scroll to explore every detail.
             </p>
-            <div className="mt-12 animate-bounce">
-              <svg className="w-5 h-5 mx-auto text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="mt-10 flex justify-end animate-bounce transition-all duration-700" style={{ opacity: activeSection === 0 ? 1 : 0, transitionDelay: '2800ms' }}>
+              <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
               </svg>
             </div>
@@ -294,21 +350,25 @@ export default function Index() {
         })}
       </div>
 
-      {/* FULL SPECS & CART SECTION (Normal scroll below animation) */}
-      <div id="specs" className="relative z-20 bg-background border-t border-border/50 pointer-events-auto overflow-hidden shadow-[0_-20px_50px_rgba(0,0,0,1)]">
+      {/* FULL SPECS & CART SECTION */}
+      <div 
+        ref={specsInView.ref as any}
+        id="specs" 
+        className="relative z-20 bg-background border-t border-border/50 pointer-events-auto overflow-hidden shadow-[0_-20px_50px_rgba(0,0,0,1)]"
+      >
         
         {/* Animated Background Elements */}
-        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden opacity-40">
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:40px_40px]"></div>
+        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:50px_50px]"></div>
           
-          {/* Breathing orbs using standard tailwind utilities */}
+          {/* Subtle breathing orbs */}
           <div className="absolute top-[10%] left-[20%] w-[500px] h-[500px] bg-primary/10 rounded-full mix-blend-screen filter blur-[120px] animate-pulse" style={{ animationDuration: '7s' }}></div>
           <div className="absolute top-[40%] right-[10%] w-[600px] h-[600px] bg-amber-500/10 rounded-full mix-blend-screen filter blur-[150px] animate-pulse" style={{ animationDuration: '11s' }}></div>
           <div className="absolute bottom-[20%] left-[30%] w-[700px] h-[700px] bg-orange-600/10 rounded-full mix-blend-screen filter blur-[150px] animate-pulse" style={{ animationDuration: '15s', animationDelay: '2s' }}></div>
         </div>
 
         <div className="relative z-10 max-w-5xl mx-auto py-24 px-6 md:px-12">
-          <div className="text-center mb-20">
+          <div className={`text-center mb-20 transition-all duration-700 ease-out ${specsInView.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
             <span className="font-mono-code text-xs tracking-[0.4em] uppercase text-primary mb-3 block">
               — Detailed Specifications —
             </span>
@@ -318,14 +378,22 @@ export default function Index() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-12">
-            {Object.entries(SPECS).map(([category, items]) => (
-              <div key={category}>
+            {Object.entries(SPECS).map(([category, items], catIdx) => (
+              <div 
+                key={category}
+                className={`transition-all duration-700 ease-out ${specsInView.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
+                style={{ transitionDelay: specsInView.isVisible ? `${200 + catIdx * 150}ms` : '0ms' }}
+              >
                 <h3 className="text-xl font-bold mb-6 text-foreground uppercase border-b border-border pb-3 tracking-wider">
                   {category}
                 </h3>
                 <div className="space-y-4">
                   {items.map((spec, i) => (
-                    <div key={i} className="flex justify-between items-baseline gap-4 group">
+                    <div 
+                      key={i} 
+                      className={`flex justify-between items-baseline gap-4 group transition-all duration-500 ease-out ${specsInView.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                      style={{ transitionDelay: specsInView.isVisible ? `${350 + catIdx * 150 + i * 100}ms` : '0ms' }}
+                    >
                       <span className="text-muted-foreground font-mono-code text-sm">
                         {spec.label}
                       </span>
@@ -370,17 +438,17 @@ export default function Index() {
         </div>
       </div>
 
-      {/* Accessories Section (White Contrast) */}
-      <div id="accessories" className="w-full bg-white text-black pt-24 pb-32 border-y border-white/20 relative z-30">
+      {/* Accessories Section — White, Minimal */}
+      <div id="accessories" className="w-full bg-white pt-24 pb-32 border-y border-gray-200 relative z-30">
         <div className="max-w-5xl mx-auto px-6 md:px-12">
           <div className="text-center mb-16">
-            <span className="font-mono-code text-xs tracking-[0.3em] uppercase text-primary mb-3 block">
+            <span className="font-mono-code text-xs tracking-[0.3em] uppercase text-gray-400 mb-3 block">
               — Enhance Your Setup —
             </span>
             <h3 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-black">Essential Accessories</h3>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-6 overflow-visible pt-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 overflow-visible pt-8">
             {[
               { 
                 name: "AUREX Prime 50mm f/1.4", 
@@ -401,7 +469,7 @@ export default function Index() {
                 specs: [
                   { label: "Material", value: "Full-grain Calf Leather" },
                   { label: "Base", value: "CNC Aluminum plate" },
-                  { label: "Tripod Mount", value: "1/4\" Direct" },
+                  { label: "Tripod Mount", value: '1/4" Direct' },
                   { label: "Battery Access", value: "Yes, bottom door" },
                   { label: "Strap Lugs", value: "Brass eyelets" },
                 ]
@@ -445,54 +513,55 @@ export default function Index() {
             ].map((item, idx) => (
               <div
                 key={idx}
-                className="bg-[#0a0a0a] border border-gray-800 rounded-sm overflow-visible group hover:border-primary transition-colors p-5 flex flex-col items-center text-center relative shadow-lg"
+                className="flex flex-col items-center text-center relative group cursor-pointer"
                 style={{ isolation: 'isolate' }}
               >
-                {/* Floating Popup on Hover */}
+                {/* Specs Popup on Hover — centered with backdrop blur */}
                 <div
                   className="
                     pointer-events-none
                     absolute left-1/2 -translate-x-1/2
-                    bottom-[calc(100%+12px)]
-                    w-[220px]
+                    bottom-[calc(100%+16px)]
+                    w-[260px]
                     z-[200]
-                    opacity-0 scale-95 translate-y-2
+                    opacity-0 scale-95 translate-y-3
                     group-hover:opacity-100 group-hover:scale-100 group-hover:translate-y-0
                     transition-all duration-300 ease-out
                   "
                 >
-                  <div className="rounded-lg overflow-hidden border border-white/10 shadow-2xl" style={{ background: 'rgba(10,10,10,0.75)', backdropFilter: 'blur(18px) saturate(1.5)' }}>
-                    <div className="w-full h-28 overflow-hidden">
-                      <img src={item.img} alt={item.name} className="w-full h-full object-cover opacity-90" />
+                  <div className="rounded-xl overflow-hidden border border-gray-200 shadow-2xl bg-white/80" style={{ backdropFilter: 'blur(20px) saturate(1.8)' }}>
+                    <div className="w-full h-32 overflow-hidden">
+                      <img src={item.img} alt={item.name} className="w-full h-full object-cover" />
                     </div>
-                    <div className="p-3">
-                      <span className="block text-[9px] uppercase tracking-[0.25em] text-primary font-bold mb-2">Tech Specs</span>
-                      <ul className="space-y-1.5">
+                    <div className="p-4">
+                      <span className="block text-[10px] uppercase tracking-[0.25em] text-gray-400 font-bold mb-2">Tech Specs</span>
+                      <ul className="space-y-2">
                         {item.specs.map((spec, sIdx) => (
                           <li key={sIdx} className="flex justify-between items-baseline gap-2">
-                            <span className="text-[9px] text-white/50 font-mono-code whitespace-nowrap">{spec.label}</span>
-                            <span className="text-[9px] text-white/90 font-mono-code text-right leading-tight">{spec.value}</span>
+                            <span className="text-[10px] text-gray-400 font-mono-code whitespace-nowrap">{spec.label}</span>
+                            <span className="text-[10px] text-black font-semibold font-mono-code text-right leading-tight">{spec.value}</span>
                           </li>
                         ))}
                       </ul>
                     </div>
                   </div>
-                  <div className="mx-auto w-3 h-3 rotate-45 border-b border-r border-white/10" style={{ background: 'rgba(10,10,10,0.75)', marginTop: '-7px' }} />
+                  <div className="mx-auto w-3 h-3 rotate-45 border-b border-r border-gray-200 bg-white/80" style={{ marginTop: '-7px' }} />
                 </div>
 
-                <div className="w-full aspect-square mb-5 overflow-hidden rounded-sm bg-[#111] flex items-center justify-center">
+                {/* Rounded product circle */}
+                <div className="w-20 h-20 mb-4 overflow-hidden rounded-full bg-gray-100 flex items-center justify-center group-hover:-translate-y-1 group-hover:scale-110 transition-all duration-500 ease-out ring-2 ring-gray-200 group-hover:ring-black/20 group-hover:shadow-lg">
                   <img
                     src={item.img}
                     alt={item.name}
-                    className="w-full h-full object-cover grayscale opacity-60 group-hover:opacity-80 group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                 </div>
 
-                <h4 className="font-bold text-xs sm:text-sm mb-2 line-clamp-2 min-h-[36px] sm:min-h-[40px] leading-tight z-10 text-white">{item.name}</h4>
-                <p className="text-primary font-mono-code text-[10px] sm:text-xs mb-5 z-10">{item.price}</p>
+                <h4 className="font-semibold text-xs text-black mb-1 line-clamp-2 min-h-[32px] leading-tight">{item.name}</h4>
+                <p className="text-gray-500 font-mono-code text-[11px] mb-4">{item.price}</p>
                 <button
                   onClick={handleAddToCart}
-                  className="w-full py-2.5 bg-white text-black hover:bg-primary hover:text-white text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-colors rounded-sm mt-auto cursor-pointer z-10"
+                  className="px-5 py-2 bg-black text-white hover:bg-gray-800 text-[10px] font-bold uppercase tracking-wider transition-colors rounded-full cursor-pointer"
                 >
                   Add to Cart
                 </button>
