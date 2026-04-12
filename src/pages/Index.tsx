@@ -279,20 +279,20 @@ export default function Index() {
          )}
       </div>
 
-      {/* Navigation Arrow — UP on LEFT side */}
+      {/* Navigation Arrow — LEFT (Previous) on extreme LEFT side */}
       <button
         onClick={() => {
           const target = Math.max(0, activeSection - 1);
           window.scrollTo({ top: target * window.innerHeight, behavior: 'smooth' });
         }}
-        className={`fixed left-6 md:left-10 bottom-1/2 translate-y-1/2 z-[85] w-12 h-12 flex items-center justify-center rounded-full bg-background/80 border border-border/80 backdrop-blur hover:bg-white/10 hover:border-primary transition-all shadow-[0_0_15px_rgba(0,0,0,0.5)] ${isPastAnimation || showWelcome || activeSection === 0 ? 'opacity-0 pointer-events-none scale-90' : 'opacity-100 hover:scale-110'}`}
+        className={`fixed left-2 md:left-4 bottom-1/2 translate-y-1/2 z-[85] w-12 h-12 flex items-center justify-center rounded-full bg-background/80 border border-border/80 backdrop-blur hover:bg-white/10 hover:border-primary transition-all shadow-[0_0_15px_rgba(0,0,0,0.5)] ${isPastAnimation || showWelcome || activeSection === 0 ? 'opacity-0 pointer-events-none scale-90' : 'opacity-100 hover:scale-110'}`}
       >
         <svg className="w-5 h-5 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
       </button>
 
-      {/* Navigation Arrow — DOWN on RIGHT side */}
+      {/* Navigation Arrow — RIGHT (Next) on extreme RIGHT side */}
       <button
         onClick={() => {
           if (isPastAnimation || activeSection === SECTIONS.length - 1) {
@@ -303,10 +303,10 @@ export default function Index() {
             window.scrollTo({ top: target * window.innerHeight, behavior: 'smooth' });
           }
         }}
-        className={`fixed right-6 md:right-10 bottom-1/2 translate-y-1/2 z-[85] w-12 h-12 flex items-center justify-center rounded-full bg-background/80 border border-border/80 backdrop-blur hover:bg-white/10 hover:border-primary transition-all shadow-[0_0_15px_rgba(0,0,0,0.5)] ${isPastAnimation || showWelcome ? 'opacity-0 pointer-events-none scale-90' : 'opacity-100 hover:scale-110'}`}
+        className={`fixed right-2 md:right-4 bottom-1/2 translate-y-1/2 z-[85] w-12 h-12 flex items-center justify-center rounded-full bg-background/80 border border-border/80 backdrop-blur hover:bg-white/10 hover:border-primary transition-all shadow-[0_0_15px_rgba(0,0,0,0.5)] ${isPastAnimation || showWelcome ? 'opacity-0 pointer-events-none scale-90' : 'opacity-100 hover:scale-110'}`}
       >
         <svg className="w-5 h-5 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
       </button>
 
