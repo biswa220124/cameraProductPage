@@ -305,14 +305,14 @@ export default function Index() {
       )}
 
       {/* Mobile/Tablet Fixed Feature Text (Top) */}
-      <div className={`fixed top-24 md:top-[15vh] inset-x-4 z-[90] pointer-events-none lg:hidden transition-all duration-500 ease-out flex justify-center ${
+      <div className={`fixed top-16 md:top-[15vh] inset-x-4 z-[90] pointer-events-none lg:hidden transition-all duration-500 ease-out flex justify-center ${
          activeSection > 0 && activeSection <= 6 && !isPastAnimation && !showWelcome ? 'opacity-100' : 'opacity-0'
       }`}>
          {activeSection > 0 && activeSection <= 6 && (
-            <div key={activeSection} className="animate-in fade-in slide-in-from-left-8 duration-700 ease-out text-center p-5 rounded-2xl bg-[#050505]/70 backdrop-blur-xl border border-white/[0.05] shadow-2xl max-w-sm w-full mx-auto">
-               <span className="font-mono-code text-[10px] tracking-[0.4em] text-primary block mb-1">{sectionMeta[activeSection].num}</span>
-               <h3 className="text-xl md:text-2xl font-bold text-foreground mb-2">{sectionMeta[activeSection].title}</h3>
-               <p className="text-muted-foreground text-xs md:text-sm leading-relaxed mx-auto">
+            <div key={activeSection} className="animate-in fade-in slide-in-from-left-8 duration-700 ease-out text-center p-3 md:p-5 rounded-xl md:rounded-2xl bg-[#050505]/85 backdrop-blur-xl border border-white/[0.05] shadow-2xl max-w-[90%] md:max-w-sm w-full mx-auto">
+               <span className="font-mono-code text-[8px] md:text-[10px] tracking-[0.4em] text-primary block mb-1">{sectionMeta[activeSection].num}</span>
+               <h3 className="text-base md:text-xl font-bold text-foreground mb-1">{sectionMeta[activeSection].title}</h3>
+               <p className="text-muted-foreground text-[10px] md:text-xs leading-relaxed mx-auto line-clamp-2">
                  {sectionMeta[activeSection].desc}
                </p>
             </div>
@@ -392,25 +392,25 @@ export default function Index() {
 
       {/* Mobile Fixed Popup for Specs (Rendered outside 3D space to bypass transform) */}
       <div 
-        className={`fixed bottom-8 sm:bottom-12 inset-x-4 sm:inset-x-6 z-[95] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`fixed bottom-4 sm:bottom-12 inset-x-4 sm:inset-x-6 z-[95] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           isMobile && activeAnnotation && !isPastAnimation 
             ? 'opacity-100 translate-y-0 pointer-events-auto' 
             : 'opacity-0 translate-y-10 pointer-events-none'
         }`}
       >
-        <div className="bg-[#050505]/85 backdrop-blur-[24px] border border-white/[0.08] rounded-2xl p-5 shadow-[0_20px_40px_rgba(0,0,0,0.8)] relative overflow-hidden ring-1 ring-white/5 mx-auto max-w-sm">
+        <div className="bg-[#050505]/95 backdrop-blur-[24px] border border-white/[0.08] rounded-xl p-4 shadow-[0_20px_40px_rgba(0,0,0,0.8)] relative overflow-hidden ring-1 ring-white/5 mx-auto max-w-sm">
            {/* Subtle Glow */}
            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 blur-[40px] pointer-events-none mix-blend-screen"></div>
            
-           <h4 className="text-[11px] font-mono-code text-primary tracking-[0.2em] uppercase mb-4 opacity-90">
+           <h4 className="text-[10px] font-mono-code text-primary tracking-[0.2em] uppercase mb-2 opacity-90">
              {activeAnnotation ? ANNOTATIONS.find(a => a.id === activeAnnotation)?.label : ''}
            </h4>
            
-           <div className="space-y-3 relative z-10 w-full" key={activeAnnotation || 'empty'}>
+           <div className="space-y-2 relative z-10 w-full" key={activeAnnotation || 'empty'}>
              {activeAnnotation && SPECS[activeAnnotation]?.map((spec) => (
-               <div key={spec.label} className="flex justify-between items-center gap-4 text-[11px] font-mono-code border-b border-white/[0.04] pb-2 last:border-0 last:pb-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
+               <div key={spec.label} className="flex justify-between items-center gap-2 text-[10px] font-mono-code border-b border-white/[0.04] pb-1.5 last:border-0 last:pb-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
                  <span className="text-white/40 uppercase tracking-widest">{spec.label}</span>
-                 <span className="text-white/90 font-medium tracking-wide">{spec.value}</span>
+                 <span className="text-white/90 font-medium tracking-wide text-[9px]">{spec.value}</span>
                </div>
              ))}
            </div>
