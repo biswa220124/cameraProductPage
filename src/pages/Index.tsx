@@ -2,12 +2,13 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { FileText, Image as ImageIcon, ShoppingCart, ShoppingBag } from 'lucide-react';
+import { FileText, Image as ImageIcon, ShoppingCart, ShoppingBag, ChevronLeft, ChevronRight, Aperture, Film, Camera, Focus, Zap, Circle, Hexagon } from 'lucide-react';
 import cameraImg from '@/assets/camera-main.png';
 import AnnotationOverlay from '@/components/AnnotationOverlay';
 import ProgressBar from '@/components/ProgressBar';
+import AurexFooter from '@/components/ui/AurexFooter';
 
-const TypewriterText = ({ text, delay = 0 }: { text: string, delay?: number }) => {
+const TypewriterText = ({ text, delay = 0, speed = 100 }: { text: string, delay?: number, speed?: number }) => {
   const [displayed, setDisplayed] = useState('');
   useEffect(() => {
     let i = 0;
@@ -16,11 +17,11 @@ const TypewriterText = ({ text, delay = 0 }: { text: string, delay?: number }) =
         setDisplayed(text.slice(0, i+1));
         i++;
         if (i >= text.length) clearInterval(interval);
-      }, 100);
+      }, speed);
       return () => clearInterval(interval);
     }, delay);
     return () => clearTimeout(timer);
-  }, [text, delay]);
+  }, [text, delay, speed]);
   return <>{displayed}</>;
 };
 
@@ -102,7 +103,7 @@ const SECTION_TO_ANNOTATION: Record<number, string | null> = {
   6: 'dial',
 };
 
-// Hook for scroll-triggered entrance animations
+// Hook for scroll-triggered entrance animations (toggles on enter/leave)
 function useInView(threshold = 0.1) {
   const ref = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -110,7 +111,7 @@ function useInView(threshold = 0.1) {
     const el = ref.current;
     if (!el) return;
     const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setIsVisible(true); observer.unobserve(el); } },
+      ([entry]) => { setIsVisible(entry.isIntersecting); },
       { threshold }
     );
     observer.observe(el);
@@ -129,10 +130,36 @@ export default function Index() {
   const [cartCount, setCartCount] = useState(0);
   const [specsMousePos, setSpecsMousePos] = useState({ x: 500, y: 500 });
   const specsInView = useInView(0.08);
+  const [activeAccessory, setActiveAccessory] = useState<number | null>(null);
+  const accessoriesInView = useInView(0.1);
+  const footerInView = useInView(0.1);
+  const [isHeroVisible, setIsHeroVisible] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
-  const handleAddToCart = () => {
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize(); // Initial check
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const testimonialsScrollRef = useRef<HTMLDivElement>(null);
+  const testimonialsInView = useInView(0.2);
+
+  const scrollTestimonials = (dir: 'left' | 'right') => {
+    if (testimonialsScrollRef.current) {
+      const scrollAmount = window.innerWidth < 768 ? 320 : 424; // approx card width + gap
+      testimonialsScrollRef.current.scrollBy({
+        left: dir === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const handleAddToCart = (name?: string) => {
     setCartCount(prev => prev + 1);
-    alert("Added to cart!");
+    setActiveAccessory(null);
+    alert(`${name || 'Item'} added to cart!`);
   };
 
   useEffect(() => {
@@ -145,10 +172,12 @@ export default function Index() {
     if (showWelcome) {
       document.body.style.overflow = 'hidden';
       window.scrollTo(0, 0);
+      setIsHeroVisible(false);
     } else {
       document.body.style.overflow = '';
+      const timer = setTimeout(() => setIsHeroVisible(true), 100);
+      return () => clearTimeout(timer);
     }
-    return () => { document.body.style.overflow = ''; };
   }, [showWelcome]);
 
   const handleGetStarted = () => {
@@ -234,6 +263,22 @@ export default function Index() {
         </div>
       )}
 
+      {/* Mobile/Tablet Fixed Feature Text (Top) */}
+      <div className={`fixed top-[15vh] inset-x-4 z-[90] pointer-events-none lg:hidden transition-all duration-500 ease-out ${
+         activeSection > 0 && activeSection <= 6 && !isPastAnimation && !showWelcome ? 'opacity-100' : 'opacity-0'
+      }`}>
+         {activeSection > 0 && activeSection <= 6 && (
+            <div key={activeSection} className="animate-in fade-in slide-in-from-left-8 duration-700 ease-out text-center pt-2">
+               <span className="font-mono-code text-xs tracking-[0.4em] text-primary block mb-2">{sectionMeta[activeSection].num}</span>
+               <h3 className="text-2xl font-bold text-foreground mb-3">{sectionMeta[activeSection].title}</h3>
+               <p className="text-muted-foreground text-sm leading-relaxed max-w-[300px] mx-auto">
+                 {sectionMeta[activeSection].desc}
+               </p>
+               <div className="mt-4 w-12 h-[1px] bg-primary/40 mx-auto" />
+            </div>
+         )}
+      </div>
+
       {/* Navigation Arrow — UP on LEFT side */}
       <button
         onClick={() => {
@@ -250,7 +295,7 @@ export default function Index() {
       {/* Navigation Arrow — DOWN on RIGHT side */}
       <button
         onClick={() => {
-          if (isPastAnimation) {
+          if (isPastAnimation || activeSection === SECTIONS.length - 1) {
             const specsEl = document.getElementById('specs');
             if (specsEl) specsEl.scrollIntoView({ behavior: 'smooth' });
           } else {
@@ -282,7 +327,7 @@ export default function Index() {
         <div
           className="relative transition-all duration-700 ease-out"
           style={{
-            transform: `translateX(${activeSection === 0 ? '-20vw' : '0px'}) rotateY(${heroRotateY}deg) rotateX(${heroRotateX}deg) scale(${heroScale})`,
+            transform: `translateX(${activeSection === 0 ? (isMobile ? '0px' : '-20vw') : '0px'}) translateY(${activeSection === 0 && isMobile ? '-15vh' : '0px'}) rotateY(${heroRotateY}deg) rotateX(${heroRotateX}deg) scale(${heroScale})`,
             transformStyle: 'preserve-3d',
           }}
         >
@@ -300,28 +345,58 @@ export default function Index() {
             annotations={ANNOTATIONS}
             activeId={activeAnnotation}
             specs={SPECS}
+            isMobile={isMobile}
           />
+        </div>
+      </div>
+
+      {/* Mobile Fixed Popup for Specs (Rendered outside 3D space to bypass transform) */}
+      <div 
+        className={`fixed bottom-8 sm:bottom-12 inset-x-4 sm:inset-x-6 z-[95] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isMobile && activeAnnotation && !isPastAnimation 
+            ? 'opacity-100 translate-y-0 pointer-events-auto' 
+            : 'opacity-0 translate-y-10 pointer-events-none'
+        }`}
+      >
+        <div className="bg-[#050505]/85 backdrop-blur-[24px] border border-white/[0.08] rounded-2xl p-5 shadow-[0_20px_40px_rgba(0,0,0,0.8)] relative overflow-hidden ring-1 ring-white/5 mx-auto max-w-sm">
+           {/* Subtle Glow */}
+           <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 blur-[40px] pointer-events-none mix-blend-screen"></div>
+           
+           <h4 className="text-[11px] font-mono-code text-primary tracking-[0.2em] uppercase mb-4 opacity-90">
+             {activeAnnotation ? ANNOTATIONS.find(a => a.id === activeAnnotation)?.label : ''}
+           </h4>
+           
+           <div className="space-y-3 relative z-10 w-full" key={activeAnnotation || 'empty'}>
+             {activeAnnotation && SPECS[activeAnnotation]?.map((spec) => (
+               <div key={spec.label} className="flex justify-between items-center gap-4 text-[11px] font-mono-code border-b border-white/[0.04] pb-2 last:border-0 last:pb-0 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                 <span className="text-white/40 uppercase tracking-widest">{spec.label}</span>
+                 <span className="text-white/90 font-medium tracking-wide">{spec.value}</span>
+               </div>
+             ))}
+           </div>
         </div>
       </div>
 
       {/* Scroll content */}
       <div className="relative z-10 pointer-events-none">
         {/* HERO — camera on left, text on right with sequential animation */}
-        <section className="h-screen flex items-center justify-end pr-10 md:pr-20 lg:pr-28">
-          <div className={`text-right max-w-md transition-all duration-1000 ${activeSection === 0 ? 'opacity-100' : 'opacity-0 blur-xl scale-110 -translate-y-8'}`}>
-            <p className="font-mono-code text-xs tracking-[0.5em] text-primary mb-4 h-[20px] flex items-center justify-end">
-              {activeSection === 0 && <TypewriterText text="INTRODUCING" delay={500} />}
-              {activeSection === 0 && <span className="w-1 h-3 bg-primary ml-1 animate-pulse"></span>}
+        <section className="h-screen flex flex-col md:flex-row items-center justify-center md:justify-end px-6 md:pr-20 lg:pr-28 relative">
+          <div className={`text-center md:text-right w-full max-w-sm md:max-w-md transition-all duration-1000 ${activeSection === 0 ? 'opacity-100 translate-y-[15vh] md:translate-y-0' : 'opacity-0 blur-xl scale-110 -translate-y-8'}`}>
+            <p className="font-mono-code text-xs tracking-[0.5em] text-primary mb-4 h-[20px] flex items-center justify-center md:justify-end transition-all duration-1000" style={{ opacity: isHeroVisible && activeSection === 0 ? 1 : 0, transitionDelay: '500ms' }}>
+              INTRODUCING
+              <span className={`w-1 h-3 bg-primary ml-1 ${isHeroVisible ? 'animate-pulse' : 'opacity-0'}`}></span>
             </p>
-            {/* AUREX appears after INTRODUCING finishes (~500ms delay + 11 chars * 100ms = 1600ms) */}
-            <h1 className="text-6xl md:text-[10rem] font-bold text-foreground/[0.06] leading-none select-none transition-all duration-700" style={{ opacity: activeSection === 0 ? 1 : 0, filter: activeSection === 0 ? 'blur(0px)' : 'blur(12px)', transitionDelay: '1800ms' }}>AUREX</h1>
-            {/* ONE appears 300ms after AUREX */}
-            <h2 className="text-3xl md:text-6xl font-bold text-foreground -mt-2 md:-mt-6 transition-all duration-700" style={{ opacity: activeSection === 0 ? 1 : 0, filter: activeSection === 0 ? 'blur(0px)' : 'blur(12px)', transitionDelay: '2100ms' }}>ONE</h2>
+            {/* AUREX appears after INTRODUCING fades in */}
+            <h1 className="text-6xl md:text-[10rem] font-bold text-foreground/[0.06] leading-none select-none transition-all duration-[1500ms] ease-[cubic-bezier(0.16,1,0.3,1)]" style={{ opacity: isHeroVisible && activeSection === 0 ? 1 : 0, filter: isHeroVisible && activeSection === 0 ? 'blur(0px)' : 'blur(20px)', transform: isHeroVisible && activeSection === 0 ? 'scale(1) translateX(0)' : 'scale(0.95) translateX(20px)', transitionDelay: '1000ms' }}>AUREX</h1>
+            {/* ONE appears sequentially with typewriter effect + blur */}
+            <h2 className="text-3xl md:text-6xl font-bold text-foreground -mt-2 md:-mt-6 transition-all duration-[1500ms] ease-[cubic-bezier(0.16,1,0.3,1)] min-h-[40px] md:min-h-[72px]" style={{ opacity: isHeroVisible && activeSection === 0 ? 1 : 0, filter: isHeroVisible && activeSection === 0 ? 'blur(0px)' : 'blur(20px)', transform: isHeroVisible && activeSection === 0 ? 'scale(1) translateX(0)' : 'scale(0.95) translateX(20px)', transitionDelay: '1600ms' }}>
+              {isHeroVisible && activeSection === 0 ? <TypewriterText text="ONE" delay={1600} speed={400} /> : <span className="opacity-0">ONE</span>}
+            </h2>
             {/* Subtitle appears after title */}
-            <p className="text-muted-foreground text-sm mt-6 max-w-sm ml-auto transition-all duration-700" style={{ opacity: activeSection === 0 ? 1 : 0, transitionDelay: '2500ms' }}>
+            <p className="text-muted-foreground text-sm mt-6 max-w-sm ml-auto transition-all duration-1000" style={{ opacity: isHeroVisible && activeSection === 0 ? 1 : 0, filter: isHeroVisible && activeSection === 0 ? 'blur(0px)' : 'blur(10px)', transitionDelay: '2600ms' }}>
               A masterpiece of optical engineering. Scroll to explore every detail.
             </p>
-            <div className="mt-10 flex justify-end animate-bounce transition-all duration-700" style={{ opacity: activeSection === 0 ? 1 : 0, transitionDelay: '2800ms' }}>
+            <div className={`mt-10 flex justify-end transition-all duration-700 ${isHeroVisible && activeSection === 0 ? 'opacity-100 animate-bounce' : 'opacity-0'}`} style={{ transitionDelay: '3000ms' }}>
               <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
               </svg>
@@ -334,16 +409,18 @@ export default function Index() {
           const meta = sectionMeta[i];
           const isLeft = i % 2 === 1;
           return (
-            <section key={i} className="h-screen flex items-center px-6 md:px-16">
+            <section key={i} className="h-screen flex items-center px-6 md:px-16 pointer-events-none">
               <div
-                className={`max-w-xs transition-all duration-700 ${
-                  activeSection === i ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-                } ${isLeft ? 'mr-auto' : 'ml-auto'}`}
+                className={`hidden lg:block max-w-xs transition-all duration-700 w-full transform ${
+                  activeSection === i 
+                    ? 'opacity-100 translate-y-0' 
+                    : 'opacity-0 translate-y-8'
+                } ${isLeft ? 'mr-auto ml-0 text-left' : 'ml-auto mr-0 text-right'}`}
               >
                 <span className="font-mono-code text-xs tracking-[0.3em] text-primary">{meta.num}</span>
-                <h3 className="text-2xl md:text-3xl font-bold text-foreground mt-1 mb-3">{meta.title}</h3>
+                <h3 className="text-3xl font-bold text-foreground mt-1 mb-3">{meta.title}</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">{meta.desc}</p>
-                <div className="mt-4 w-12 h-[1px] bg-primary/40" />
+                <div className={`mt-4 w-12 h-[1px] bg-primary/40 ${isLeft ? 'mx-0' : 'ml-auto'}`} />
               </div>
             </section>
           );
@@ -373,7 +450,7 @@ export default function Index() {
               — Detailed Specifications —
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">
-              AUREX ONE TECH SPECS
+              AUREX ONE TECHNICAL SPECIFICATIONS
             </h2>
           </div>
 
@@ -412,8 +489,8 @@ export default function Index() {
           <div id="buy-now" className="mt-24 pt-12 border-t border-border/30 flex flex-col items-center justify-center text-center">
             <h3 className="text-2xl font-bold mb-2">AUREX ONE</h3>
             <div className="flex items-baseline gap-3 mb-6">
-              <span className="text-muted-foreground line-through text-sm">$4,299.00</span>
-              <span className="text-3xl font-bold text-foreground">$3,499.00</span>
+              <span className="text-muted-foreground line-through text-sm">₹3,56,990</span>
+              <span className="text-3xl font-bold text-foreground">₹2,89,990</span>
             </div>
             
             <button onClick={() => navigate('/checkout')} className="px-8 py-3 bg-primary text-primary-foreground font-mono-code text-sm tracking-wider hover:bg-primary/90 transition-colors uppercase rounded-sm cursor-pointer">
@@ -439,175 +516,271 @@ export default function Index() {
       </div>
 
       {/* Accessories Section — White, Minimal */}
-      <div id="accessories" className="w-full bg-white pt-24 pb-32 border-y border-gray-200 relative z-30">
-        <div className="max-w-5xl mx-auto px-6 md:px-12">
-          <div className="text-center mb-16">
-            <span className="font-mono-code text-xs tracking-[0.3em] uppercase text-gray-400 mb-3 block">
-              — Enhance Your Setup —
-            </span>
-            <h3 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-black">Essential Accessories</h3>
-          </div>
-          
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 overflow-visible pt-8">
-            {[
-              { 
-                name: "AUREX Prime 50mm f/1.4", 
-                price: "$899.00", 
-                img: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&q=80&w=400&h=400",
-                specs: [
-                  { label: "Focal Length", value: "50mm" },
-                  { label: "Max Aperture", value: "f/1.4" },
-                  { label: "Elements", value: "11 elements / 9 groups" },
-                  { label: "Filter Size", value: "72mm" },
-                  { label: "Weight", value: "520g" },
-                ]
-              },
-              { 
-                name: "Premium Leather Case", 
-                price: "$129.00", 
-                img: "https://images.unsplash.com/photo-1544007380-4965adba2cf3?auto=format&fit=crop&q=80&w=400&h=400",
-                specs: [
-                  { label: "Material", value: "Full-grain Calf Leather" },
-                  { label: "Base", value: "CNC Aluminum plate" },
-                  { label: "Tripod Mount", value: '1/4" Direct' },
-                  { label: "Battery Access", value: "Yes, bottom door" },
-                  { label: "Strap Lugs", value: "Brass eyelets" },
-                ]
-              },
-              { 
-                name: "Pro SDXC Memory Card", 
-                price: "$149.00", 
-                img: "https://images.unsplash.com/photo-1624434207284-7a1314867c29?auto=format&fit=crop&q=80&w=400&h=400",
-                specs: [
-                  { label: "Capacity", value: "256GB" },
-                  { label: "Speed Class", value: "UHS-II V90" },
-                  { label: "Read Speed", value: "300 MB/s max" },
-                  { label: "Write Speed", value: "290 MB/s max" },
-                  { label: "Compatibility", value: "SD / SDXC / UHS-II" },
-                ]
-              },
-              { 
-                name: "Carbon Travel Tripod", 
-                price: "$299.00", 
-                img: "https://images.unsplash.com/photo-1527011045974-4ec3d11bfc72?auto=format&fit=crop&q=80&w=400&h=400",
-                specs: [
-                  { label: "Material", value: "10-Layer Carbon Fiber" },
-                  { label: "Max Height", value: "155 cm" },
-                  { label: "Folded Length", value: "40 cm" },
-                  { label: "Weight", value: "1.2 kg" },
-                  { label: "Max Load", value: "18 kg" },
-                ]
-              },
-              { 
-                name: "BP-FZ100 Battery Pack", 
-                price: "$79.00", 
-                img: "https://images.unsplash.com/photo-1622323201404-58a44afb639a?auto=format&fit=crop&q=80&w=400&h=400",
-                specs: [
-                  { label: "Chemistry", value: "Lithium-Ion" },
-                  { label: "Capacity", value: "2280 mAh" },
-                  { label: "Voltage", value: "7.2V" },
-                  { label: "Shot Life", value: "~600 shots" },
-                  { label: "Charge Time", value: "~2.5 hours" },
-                ]
-              },
-            ].map((item, idx) => (
-              <div
-                key={idx}
-                className="flex flex-col items-center text-center relative group cursor-pointer"
-                style={{ isolation: 'isolate' }}
-              >
-                {/* Specs Popup on Hover — centered with backdrop blur */}
+      {(() => {
+        const accessories = [
+          { 
+            name: "AUREX Prime 50mm f/1.4", 
+            price: "₹74,990",  
+            img: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=400&h=400&q=80",
+            specs: [
+              { label: "Focal Length", value: "50mm" },
+              { label: "Max Aperture", value: "f/1.4" },
+              { label: "Elements", value: "11 elements / 9 groups" },
+              { label: "Filter Size", value: "72mm" },
+              { label: "Weight", value: "520g" },
+            ]
+          },
+          { 
+            name: "Premium Leather Case", 
+            price: "₹10,990", 
+            img: "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?auto=format&fit=crop&w=400&h=400&q=80",
+            specs: [
+              { label: "Material", value: "Full-grain Calf Leather" },
+              { label: "Base", value: "CNC Aluminum plate" },
+              { label: "Tripod Mount", value: '1/4" Direct' },
+              { label: "Battery Access", value: "Yes, bottom door" },
+              { label: "Strap Lugs", value: "Brass eyelets" },
+            ]
+          },
+          { 
+            name: "Pro SDXC Memory Card", 
+            price: "₹12,490", 
+            img: "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?auto=format&fit=crop&w=400&h=400&q=80",
+            specs: [
+              { label: "Capacity", value: "256GB" },
+              { label: "Speed Class", value: "UHS-II V90" },
+              { label: "Read Speed", value: "300 MB/s max" },
+              { label: "Write Speed", value: "290 MB/s max" },
+              { label: "Compatibility", value: "SD / SDXC / UHS-II" },
+            ]
+          },
+          { 
+            name: "Carbon Travel Tripod", 
+            price: "₹24,990", 
+            img: "https://images.unsplash.com/photo-1510127034890-ba27508e9f1c?auto=format&fit=crop&w=400&h=400&q=80",
+            specs: [
+              { label: "Material", value: "10-Layer Carbon Fiber" },
+              { label: "Max Height", value: "155 cm" },
+              { label: "Folded Length", value: "40 cm" },
+              { label: "Weight", value: "1.2 kg" },
+              { label: "Max Load", value: "18 kg" },
+            ]
+          },
+          { 
+            name: "BP-FZ100 Battery Pack", 
+            price: "₹6,590", 
+            img: "https://images.unsplash.com/photo-1564466809058-bf4114d55352?auto=format&fit=crop&w=400&h=400&q=80",
+            specs: [
+              { label: "Chemistry", value: "Lithium-Ion" },
+              { label: "Capacity", value: "2280 mAh" },
+              { label: "Voltage", value: "7.2V" },
+              { label: "Shot Life", value: "~600 shots" },
+              { label: "Charge Time", value: "~2.5 hours" },
+            ]
+          },
+        ];
+        return (
+        <>
+        <div id="accessories" ref={accessoriesInView.ref} className="w-full bg-white pt-24 pb-32 border-y border-gray-200 relative z-30">
+          <div className="max-w-5xl mx-auto px-6 md:px-12">
+            <div className={`text-center mb-16 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] transform ${accessoriesInView.isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
+              <span className="font-mono-code text-xs tracking-[0.3em] uppercase text-gray-400 mb-3 block">
+                — Enhance Your Setup —
+              </span>
+              <h3 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-black">Essential Accessories</h3>
+            </div>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 pt-8">
+              {accessories.map((item, idx) => (
                 <div
-                  className="
-                    pointer-events-none
-                    absolute left-1/2 -translate-x-1/2
-                    bottom-[calc(100%+16px)]
-                    w-[260px]
-                    z-[200]
-                    opacity-0 scale-95 translate-y-3
-                    group-hover:opacity-100 group-hover:scale-100 group-hover:translate-y-0
-                    transition-all duration-300 ease-out
-                  "
+                  key={idx}
+                  className={`flex flex-col items-center text-center cursor-pointer group transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] transform ${
+                    accessoriesInView.isVisible ? 'translate-y-0 opacity-100' : 'translate-y-16 opacity-0'
+                  }`}
+                  style={{ transitionDelay: `${idx * 100}ms` }}
+                  onClick={() => setActiveAccessory(idx)}
                 >
-                  <div className="rounded-xl overflow-hidden border border-gray-200 shadow-2xl bg-white/80" style={{ backdropFilter: 'blur(20px) saturate(1.8)' }}>
-                    <div className="w-full h-32 overflow-hidden">
-                      <img src={item.img} alt={item.name} className="w-full h-full object-cover" />
-                    </div>
-                    <div className="p-4">
-                      <span className="block text-[10px] uppercase tracking-[0.25em] text-gray-400 font-bold mb-2">Tech Specs</span>
-                      <ul className="space-y-2">
-                        {item.specs.map((spec, sIdx) => (
-                          <li key={sIdx} className="flex justify-between items-baseline gap-2">
-                            <span className="text-[10px] text-gray-400 font-mono-code whitespace-nowrap">{spec.label}</span>
-                            <span className="text-[10px] text-black font-semibold font-mono-code text-right leading-tight">{spec.value}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                  {/* Rounded product circle */}
+                  <div className="w-20 h-20 mb-4 overflow-hidden rounded-full bg-gray-100 flex items-center justify-center group-hover:-translate-y-2 group-hover:scale-110 transition-all duration-500 ease-out ring-2 ring-gray-200 group-hover:ring-black/30 group-hover:shadow-xl">
+                    <img
+                      src={item.img}
+                      alt={item.name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
                   </div>
-                  <div className="mx-auto w-3 h-3 rotate-45 border-b border-r border-gray-200 bg-white/80" style={{ marginTop: '-7px' }} />
+                  <h4 className="font-semibold text-xs text-black mb-1 line-clamp-2 min-h-[32px] leading-tight">{item.name}</h4>
+                  <p className="text-gray-500 font-mono-code text-[11px]">{item.price}</p>
                 </div>
-
-                {/* Rounded product circle */}
-                <div className="w-20 h-20 mb-4 overflow-hidden rounded-full bg-gray-100 flex items-center justify-center group-hover:-translate-y-1 group-hover:scale-110 transition-all duration-500 ease-out ring-2 ring-gray-200 group-hover:ring-black/20 group-hover:shadow-lg">
-                  <img
-                    src={item.img}
-                    alt={item.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                </div>
-
-                <h4 className="font-semibold text-xs text-black mb-1 line-clamp-2 min-h-[32px] leading-tight">{item.name}</h4>
-                <p className="text-gray-500 font-mono-code text-[11px] mb-4">{item.price}</p>
-                <button
-                  onClick={handleAddToCart}
-                  className="px-5 py-2 bg-black text-white hover:bg-gray-800 text-[10px] font-bold uppercase tracking-wider transition-colors rounded-full cursor-pointer"
-                >
-                  Add to Cart
-                </button>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Testimonials Section (Dark) */}
-      <div id="testimonials" className="w-full bg-[#050505] pt-24 pb-32 relative z-30">
-        <div className="max-w-5xl mx-auto px-6 md:px-12">
-          <div className="text-center mb-16">
-            <span className="font-mono-code text-xs tracking-[0.3em] uppercase text-primary mb-3 block">
-              — Trusted by Professionals —
-            </span>
-            <h3 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-white">What They Say</h3>
+        {/* Accessory Popup Modal with Backdrop Blur */}
+        {activeAccessory !== null && (
+          <div 
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+            onClick={() => setActiveAccessory(null)}
+          >
+            {/* Blur backdrop */}
+            <div className="absolute inset-0 bg-black/40 animate-[fadeIn_0.3s_ease-out]" style={{ backdropFilter: 'blur(12px)' }} />
+            
+            {/* Modal card */}
+            <div 
+              className="relative z-10 w-full max-w-sm rounded-2xl overflow-hidden bg-white shadow-2xl animate-[popIn_0.35s_cubic-bezier(0.16,1,0.3,1)]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Product image */}
+              <div className="relative w-full h-48 overflow-hidden">
+                <img 
+                  src={accessories[activeAccessory].img} 
+                  alt={accessories[activeAccessory].name} 
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                <div className="absolute bottom-4 left-5 right-5">
+                  <h4 className="text-white font-bold text-lg leading-tight">{accessories[activeAccessory].name}</h4>
+                  <p className="text-white/70 font-mono text-sm mt-1">{accessories[activeAccessory].price}</p>
+                </div>
+                {/* Close button */}
+                <button 
+                  onClick={() => setActiveAccessory(null)}
+                  className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center transition-colors cursor-pointer"
+                  style={{ backdropFilter: 'blur(8px)' }}
+                >
+                  ✕
+                </button>
+              </div>
+              
+              {/* Specs list */}
+              <div className="p-5">
+                <span className="block text-[10px] uppercase tracking-[0.3em] text-gray-400 font-bold mb-4">Product Details</span>
+                <ul className="space-y-3">
+                  {accessories[activeAccessory].specs.map((spec, sIdx) => (
+                    <li key={sIdx} className="flex justify-between items-baseline gap-4 pb-2 border-b border-gray-100 last:border-0">
+                      <span className="text-xs text-gray-400 font-mono">{spec.label}</span>
+                      <span className="text-xs text-black font-semibold font-mono text-right">{spec.value}</span>
+                    </li>
+                  ))}
+                </ul>
+                
+                <button
+                  onClick={() => handleAddToCart(accessories[activeAccessory].name)}
+                  className="w-full mt-6 py-3 bg-black text-white hover:bg-gray-800 text-xs font-bold uppercase tracking-widest transition-colors rounded-full cursor-pointer"
+                >
+                  Add to Cart — {accessories[activeAccessory].price}
+                </button>
+              </div>
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        )}
+        </>
+        );
+      })()}
+
+      {/* Testimonials Section (Dark Carousel) */}
+      <div id="testimonials" ref={testimonialsInView.ref} className="w-full bg-[#050505] pt-24 pb-32 relative z-30 overflow-hidden">
+        <div className="max-w-[1400px] mx-auto px-6 md:px-12">
+          
+          {/* Header & Controls */}
+          <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+            <div>
+              <span className="font-mono-code text-xs tracking-[0.3em] uppercase text-gray-500 mb-3 block">
+                — Trusted by Professionals —
+              </span>
+              <h3 className="text-3xl md:text-5xl font-bold tracking-tight text-white mb-2">
+                What Our Customers Say
+              </h3>
+              <p className="text-gray-500 text-sm">Real Stories. Real Results. Straight From Those Who Know Us Best.</p>
+            </div>
+            
+            {/* Scroll Controls */}
+            <div className="flex gap-4">
+              <button 
+                onClick={() => scrollTestimonials('left')}
+                className="w-12 h-12 rounded-full border border-gray-800 bg-[#0a0a0a] flex items-center justify-center text-white hover:bg-gray-800 transition-colors cursor-pointer group"
+                aria-label="Scroll Left"
+              >
+                <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+              </button>
+              <button 
+                onClick={() => scrollTestimonials('right')}
+                className="w-12 h-12 rounded-full border border-gray-800 bg-[#0a0a0a] flex items-center justify-center text-white hover:bg-gray-800 transition-colors cursor-pointer group"
+                aria-label="Scroll Right"
+              >
+                <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
+          </div>
+
+          {/* Carousel Container */}
+          <div 
+            ref={testimonialsScrollRef}
+            className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-8 -mx-6 px-6 md:-mx-12 md:px-12"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            <style>{`#testimonials ::-webkit-scrollbar { display: none; }`}</style>
+            
             {[
               {
+                icon: <Hexagon size={24} className="text-white" />,
                 quote: "The AUREX ONE has completely transformed how I shoot. The dynamic range is unlike anything else on the market, and the autofocus is almost precognitive.",
                 author: "Elena R.",
                 role: "Fashion Photographer"
               },
               {
+                icon: <Aperture size={24} className="text-white" />,
                 quote: "Built like a tank but handles like a sports car. I've dragged it through rainforests and deserts, and it hasn't skipped a single frame.",
                 author: "Marcus T.",
                 role: "Adventure Journalist"
               },
               {
+                icon: <Film size={24} className="text-white" />,
                 quote: "Finally, a camera that doesn't get in the way of my vision. The hybrid viewfinder gives me the best of both worlds, bridging analog feel with digital power.",
                 author: "David K.",
                 role: "Cinematographer"
+              },
+              {
+                icon: <Focus size={24} className="text-white" />,
+                quote: "Skin tones straight out of camera are unbelievable. It saves me hours in post-processing every week without compromising on resolution.",
+                author: "Sarah J.",
+                role: "Portrait Specialist"
+              },
+              {
+                icon: <Zap size={24} className="text-white" />,
+                quote: "120 frames per second with full AF tracking. I'm capturing split-second moments that were previously impossible to get. Game changer.",
+                author: "James W.",
+                role: "Sports Photographer"
+              },
+              {
+                icon: <Camera size={24} className="text-white" />,
+                quote: "The compact size combined with the rugged build lets me take this anywhere without attracting too much attention. Pure stealth.",
+                author: "Aisha M.",
+                role: "Documentary Filmmaker"
+              },
+              {
+                icon: <Circle size={24} className="text-white" />,
+                quote: "The lens rendering is clinically perfect yet full of character. A massive leap forward for the format and for modern optical engineering.",
+                author: "Chen L.",
+                role: "Architecture Photographer"
               }
             ].map((testimonial, idx) => (
-              <div key={idx} className="bg-[#0a0a0a] border border-border/20 p-8 rounded-sm hover:border-primary/40 transition-colors flex flex-col justify-between shadow-2xl">
-                <div className="mb-6">
-                  <svg className="w-8 h-8 text-primary/40 mb-4" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
-                  </svg>
-                  <p className="text-[#a1a1aa] leading-relaxed text-sm italic">"{testimonial.quote}"</p>
-                </div>
+              <div 
+                key={idx} 
+                className={`
+                  min-w-[320px] md:min-w-[400px] w-[320px] md:w-[400px] bg-[#0d0d0d] border border-gray-800 p-8 md:p-10 rounded-[32px] snap-start shrink-0 flex flex-col justify-between 
+                  transition-all duration-700 ease-out transform hover:border-gray-600 hover:bg-[#111] cursor-default
+                  ${testimonialsInView.isVisible ? 'translate-y-0 opacity-100' : 'translate-y-16 opacity-0'}
+                `}
+                style={{ transitionDelay: `${idx * 100}ms` }}
+              >
                 <div>
-                  <h4 className="font-bold text-foreground text-sm">{testimonial.author}</h4>
-                  <p className="font-mono-code text-[10px] text-primary mt-1 uppercase tracking-wider">{testimonial.role}</p>
+                  <div className="w-14 h-14 rounded-full bg-[#1a1a1a] flex items-center justify-center mb-6">
+                    {testimonial.icon}
+                  </div>
+                  <h4 className="font-bold text-white text-lg">{testimonial.author}</h4>
+                  <p className="font-mono-code text-[10px] text-gray-500 mt-1 uppercase tracking-wider mb-6">{testimonial.role}</p>
+                  <p className="text-[#a1a1aa] leading-relaxed text-sm mt-4">"{testimonial.quote}"</p>
                 </div>
               </div>
             ))}
@@ -673,68 +846,10 @@ export default function Index() {
         </div>
       </div>
 
-      {/* Footer Section */}
-      <footer className="w-full bg-[#050505] border-t border-border/30 pt-16 pb-8 px-6 md:px-12 mt-12 relative z-30">
-          <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 border-b border-border/20 pb-12">
-            
-            {/* Brand */}
-            <div className="md:col-span-1">
-              <h2 className="font-bold text-2xl tracking-[0.2em] text-foreground mb-4">AUREX</h2>
-              <p className="text-[#a1a1aa] text-sm leading-relaxed mb-6">
-                Pioneering the future of optical engineering and digital capture technologies for professionals worldwide.
-              </p>
-              <div className="flex gap-4">
-                <a href="#" className="w-8 h-8 rounded-full bg-[#111] border border-border/40 flex items-center justify-center text-[#a1a1aa] hover:text-primary hover:border-primary transition-all">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/></svg>
-                </a>
-                <a href="#" className="w-8 h-8 rounded-full bg-[#111] border border-border/40 flex items-center justify-center text-[#a1a1aa] hover:text-primary hover:border-primary transition-all">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-                </a>
-              </div>
-            </div>
-
-            {/* Links */}
-            <div>
-              <h4 className="text-white font-bold mb-4">Products</h4>
-              <ul className="space-y-3 text-sm text-[#a1a1aa]">
-                <li><a href="#" className="hover:text-primary transition-colors">AUREX ONE</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">AUREX Lenses</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Accessories</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Compare Cameras</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-white font-bold mb-4">Support</h4>
-              <ul className="space-y-3 text-sm text-[#a1a1aa]">
-                <li><a href="#" className="hover:text-primary transition-colors">Firmware Updates</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Contact Support</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Warranty Info</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">User Manuals</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-white font-bold mb-4">Company</h4>
-              <ul className="space-y-3 text-sm text-[#a1a1aa]">
-                <li><a href="#" className="hover:text-primary transition-colors">About AUREX</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Careers</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Press Room</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Investors</a></li>
-              </ul>
-            </div>
-
-          </div>
-          
-          <div className="max-w-7xl mx-auto mt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-[#52525b]">
-            <p>&copy; {new Date().getFullYear()} AUREX Imaging Corp. All rights reserved.</p>
-            <div className="flex gap-6">
-              <a href="#" className="hover:text-[#a1a1aa] transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-[#a1a1aa] transition-colors">Terms of Service</a>
-              <a href="#" className="hover:text-[#a1a1aa] transition-colors">Cookie Policy</a>
-            </div>
-          </div>
-        </footer>
+      {/* Footer */}
+      <div ref={footerInView.ref as any}>
+        <AurexFooter />
+      </div>
 
       {/* Progress bar */}
       <div className={`transition-opacity duration-500 ease-in-out pointer-events-none ${isPastAnimation ? 'opacity-0' : 'opacity-100'}`}>
@@ -751,9 +866,48 @@ export default function Index() {
           AUREX
         </div>
       </div>
+
+      {/* Mobile Bottom Action Bar — shows after 3D scroll, hides at footer */}
+      <nav className={`fixed bottom-0 left-0 right-0 z-[90] lg:hidden pointer-events-auto flex items-stretch bg-[#0e0e10]/90 backdrop-blur-xl border-t border-white/[0.06] shadow-[0_-4px_24px_rgba(0,0,0,0.6)] transition-all duration-500 ${
+        isPastAnimation && !footerInView.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-full pointer-events-none'
+      }`}>
+        <button
+          onClick={() => {
+            const specEl = document.getElementById('specs');
+            if (specEl) specEl.scrollIntoView({ behavior: 'smooth' });
+          }}
+          className="flex-1 flex flex-col items-center justify-center gap-1 py-3 text-muted-foreground hover:text-white hover:bg-white/5 transition-all outline-none cursor-pointer"
+        >
+          <FileText className="w-5 h-5" />
+          <span className="font-mono-code text-[10px] tracking-widest uppercase">Specs</span>
+        </button>
+
+        <div className="w-[1px] bg-white/[0.06] my-2" />
+
+        <button
+          onClick={() => {
+            const el = document.getElementById('gallery');
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+          }}
+          className="flex-1 flex flex-col items-center justify-center gap-1 py-3 text-muted-foreground hover:text-white hover:bg-white/5 transition-all outline-none cursor-pointer"
+        >
+          <ImageIcon className="w-5 h-5" />
+          <span className="font-mono-code text-[10px] tracking-widest uppercase">Gallery</span>
+        </button>
+
+        <div className="w-[1px] bg-white/[0.06] my-2" />
+
+        <button
+          onClick={() => navigate('/checkout')}
+          className="flex-1 flex flex-col items-center justify-center gap-1 py-3 bg-primary/90 hover:bg-primary text-primary-foreground font-bold transition-all outline-none cursor-pointer shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
+        >
+          <ShoppingCart className="w-5 h-5" />
+          <span className="font-mono-code text-[10px] tracking-widest uppercase">Buy Now</span>
+        </button>
+      </nav>
         
-      {/* Horizontal Nav (Visible during scroll) */}
-      <nav className={`fixed z-[90] pointer-events-auto hidden md:flex items-center gap-2 p-1.5 rounded-full bg-[#111113]/80 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] transition-all duration-500 ease-in-out top-6 right-6 ${
+      {/* Horizontal Nav (Visible during scroll — desktop only) */}
+      <nav className={`fixed z-[90] pointer-events-auto hidden lg:flex items-center gap-2 p-1.5 rounded-full bg-[#111113]/80 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] transition-all duration-500 ease-in-out top-6 right-6 ${
         isPastAnimation ? 'opacity-0 translate-x-12 pointer-events-none' : 'opacity-100 translate-x-0'
       }`}>
         <button 
@@ -761,17 +915,17 @@ export default function Index() {
             const specEl = document.getElementById('specs');
             if (specEl) specEl.scrollIntoView({ behavior: 'smooth' });
           }} 
-          className="text-[11px] px-5 py-2.5 text-muted-foreground font-mono-code tracking-wider cursor-pointer hover:text-white hover:bg-white/5 transition-all rounded-full border-none outline-none uppercase"
+          className="text-[10px] md:text-[11px] px-3 md:px-5 py-2 md:py-2.5 text-muted-foreground font-mono-code tracking-wider cursor-pointer hover:text-white hover:bg-white/5 transition-all rounded-full border-none outline-none uppercase"
         >
           Specs
         </button>
         
         <button 
           onClick={() => {
-            const el = document.getElementById('testimonials');
+            const el = document.getElementById('gallery');
             if (el) el.scrollIntoView({ behavior: 'smooth' });
           }}
-          className="text-[11px] px-5 py-2.5 text-muted-foreground font-mono-code tracking-wider cursor-pointer hover:text-white hover:bg-white/5 transition-all rounded-full border-none outline-none uppercase"
+          className="text-[10px] md:text-[11px] px-3 md:px-5 py-2 md:py-2.5 text-muted-foreground font-mono-code tracking-wider cursor-pointer hover:text-white hover:bg-white/5 transition-all rounded-full border-none outline-none uppercase"
         >
           Gallery
         </button>
@@ -779,7 +933,7 @@ export default function Index() {
         {cartCount > 0 && (
           <button 
             onClick={() => navigate('/checkout')} 
-            className="px-4 py-1.5 flex items-center gap-2 bg-[#1a1a1c] border border-white/5 hover:bg-white/10 text-white font-mono-code text-[11px] tracking-wider transition-all rounded-full cursor-pointer uppercase outline-none"
+            className="px-3 md:px-4 py-1.5 flex items-center gap-2 bg-[#1a1a1c] border border-white/5 hover:bg-white/10 text-white font-mono-code text-[10px] md:text-[11px] tracking-wider transition-all rounded-full cursor-pointer uppercase outline-none"
           >
             Cart
             <span className="bg-primary text-primary-foreground w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold">
@@ -790,13 +944,13 @@ export default function Index() {
 
         <button 
           onClick={() => navigate('/checkout')} 
-          className="text-[11px] px-6 py-2.5 bg-primary/90 hover:bg-primary text-primary-foreground font-bold font-mono-code tracking-wider transition-all shadow-[0_0_15px_rgba(234,88,12,0.3)] hover:shadow-[0_0_25px_rgba(234,88,12,0.5)] rounded-full cursor-pointer whitespace-nowrap outline-none uppercase ml-1"
+          className="text-[10px] md:text-[11px] px-4 md:px-6 py-2 md:py-2.5 bg-primary/90 hover:bg-primary text-primary-foreground font-bold font-mono-code tracking-wider transition-all shadow-[0_0_15px_rgba(234,88,12,0.3)] hover:shadow-[0_0_25px_rgba(234,88,12,0.5)] rounded-full cursor-pointer whitespace-nowrap outline-none uppercase ml-0 md:ml-1"
         >
           Buy Now
         </button>
       </nav>
 
-      {/* Vertical Icon Nav (Visible after scroll) */}
+      {/* Vertical Icon Nav (Visible after scroll — tablet/desktop only) */}
       <nav className={`fixed z-[90] pointer-events-auto hidden md:flex flex-col items-center gap-2 p-1.5 rounded-full bg-[#111113]/80 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] transition-all duration-500 ease-out delay-100 right-6 top-1/2 -translate-y-1/2 ${
         isPastAnimation ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-16 pointer-events-none'
       }`}>
@@ -805,30 +959,30 @@ export default function Index() {
             const specEl = document.getElementById('specs');
             if (specEl) specEl.scrollIntoView({ behavior: 'smooth' });
           }} 
-          className="p-3 text-muted-foreground cursor-pointer hover:text-white hover:bg-white/5 transition-all outline-none flex items-center justify-center rounded-full"
+          className="p-2 md:p-3 text-muted-foreground cursor-pointer hover:text-white hover:bg-white/5 transition-all outline-none flex items-center justify-center rounded-full"
           title="Specs"
         >
-          <FileText className="w-5 h-5" />
+          <FileText className="w-4 h-4 md:w-5 md:h-5" />
         </button>
         
         <button 
           onClick={() => {
-            const el = document.getElementById('testimonials');
+            const el = document.getElementById('gallery');
             if (el) el.scrollIntoView({ behavior: 'smooth' });
           }}
-          className="p-3 text-muted-foreground cursor-pointer hover:text-white hover:bg-white/5 transition-all outline-none flex items-center justify-center rounded-full"
+          className="p-2 md:p-3 text-muted-foreground cursor-pointer hover:text-white hover:bg-white/5 transition-all outline-none flex items-center justify-center rounded-full"
           title="Gallery"
         >
-          <ImageIcon className="w-5 h-5" />
+          <ImageIcon className="w-4 h-4 md:w-5 md:h-5" />
         </button>
         
         {cartCount > 0 && (
           <button 
             onClick={() => navigate('/checkout')} 
-            className="p-3 flex items-center gap-2 bg-[#1a1a1c] border border-white/5 hover:bg-white/10 text-white transition-all cursor-pointer outline-none justify-center relative rounded-full"
+            className="p-2 md:p-3 flex items-center gap-2 bg-[#1a1a1c] border border-white/5 hover:bg-white/10 text-white transition-all cursor-pointer outline-none justify-center relative rounded-full"
             title="Cart"
           >
-            <ShoppingBag className="w-5 h-5" />
+            <ShoppingBag className="w-4 h-4 md:w-5 md:h-5" />
             <span className="bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold absolute w-4 h-4 text-[9px] -top-1 -right-1">
               {cartCount}
             </span>
@@ -837,10 +991,10 @@ export default function Index() {
 
         <button 
           onClick={() => navigate('/checkout')} 
-          className="p-3 bg-primary/90 hover:bg-primary text-primary-foreground font-bold transition-all shadow-[0_0_15px_rgba(234,88,12,0.3)] hover:shadow-[0_0_25px_rgba(234,88,12,0.5)] cursor-pointer outline-none flex items-center justify-center rounded-full mt-1"
+          className="p-2 md:p-3 bg-primary/90 hover:bg-primary text-primary-foreground font-bold transition-all shadow-[0_0_15px_rgba(234,88,12,0.3)] hover:shadow-[0_0_25px_rgba(234,88,12,0.5)] cursor-pointer outline-none flex items-center justify-center rounded-full mt-1"
           title="Buy Now"
         >
-          <ShoppingCart className="w-5 h-5" />
+          <ShoppingCart className="w-4 h-4 md:w-5 md:h-5" />
         </button>
       </nav>
     </div>

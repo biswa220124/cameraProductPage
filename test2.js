@@ -1,0 +1,1 @@
+(async () = const puppeteer = require('puppeteer'); const browser = await puppeteer.launch(); const page = await browser.newPage(); await page.goto('http://localhost:8080/'); await new Promise(r =, 3000)); const html = await page.evaluate(() =; console.log('HTML LEN:', html.length); console.log(html.substring(0, 500)); await browser.close(); })();  

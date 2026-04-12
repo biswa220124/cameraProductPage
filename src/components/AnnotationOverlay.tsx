@@ -14,9 +14,10 @@ interface AnnotationOverlayProps {
   annotations: Annotation[];
   activeId: string | null;
   specs: Record<string, { label: string; value: string }[]>;
+  isMobile?: boolean;
 }
 
-export default function AnnotationOverlay({ annotations, activeId, specs }: AnnotationOverlayProps) {
+export default function AnnotationOverlay({ annotations, activeId, specs, isMobile }: AnnotationOverlayProps) {
   return (
     <div className="absolute inset-0 pointer-events-none">
       {annotations.map((ann) => {
@@ -40,56 +41,58 @@ export default function AnnotationOverlay({ annotations, activeId, specs }: Anno
             </div>
 
             {/* Line + Label */}
-            <div
-              className={`absolute top-1/2 -translate-y-1/2 transition-all duration-700 ${
-                isActive ? 'opacity-100' : 'opacity-0'
-              }`}
-              style={{
-                [ann.side === 'right' ? 'left' : 'right']: '12px',
-                width: `${lineLength}px`,
-              }}
-            >
-              {/* Dashed line */}
+            {!isMobile && (
               <div
-                className={`absolute top-1/2 h-[1px] border-t border-dashed border-primary/60 transition-all duration-700 ${
-                  isActive ? 'w-full' : 'w-0'
+                className={`absolute top-1/2 -translate-y-1/2 transition-all duration-700 ${
+                  isActive ? 'opacity-100' : 'opacity-0'
                 }`}
                 style={{
-                  [ann.side === 'right' ? 'left' : 'right']: '0',
-                }}
-              />
-
-              {/* Spec card */}
-              <div
-                className={`absolute top-1/2 -translate-y-1/2 transition-all duration-500 delay-200 ${
-                  isActive ? 'opacity-100 translate-x-0' : 'opacity-0'
-                } ${ann.side === 'right' ? '' : 'right-0'}`}
-                style={{
-                  [ann.side === 'right' ? 'left' : 'right']: `${lineLength + 8}px`,
-                  transform: `translateY(-50%) ${
-                    isActive
-                      ? ''
-                      : ann.side === 'right'
-                      ? 'translateX(-20px)'
-                      : 'translateX(20px)'
-                  }`,
+                  [ann.side === 'right' ? 'left' : 'right']: '12px',
+                  width: `${lineLength}px`,
                 }}
               >
-                <div className="bg-background/80 backdrop-blur-md border border-border/40 rounded-sm p-3 min-w-[200px] pointer-events-auto">
-                  <h4 className="text-xs font-mono-code text-primary tracking-wider uppercase mb-2">
-                    {ann.label}
-                  </h4>
-                  <div className="space-y-1.5">
-                    {specData.map((spec) => (
-                      <div key={spec.label} className="flex justify-between gap-4 text-[10px] font-mono-code">
-                        <span className="text-muted-foreground uppercase tracking-wider">{spec.label}</span>
-                        <span className="text-foreground font-medium">{spec.value}</span>
-                      </div>
-                    ))}
+                {/* Dashed line */}
+                <div
+                  className={`absolute top-1/2 h-[1px] border-t border-dashed border-primary/60 transition-all duration-700 ${
+                    isActive ? 'w-full' : 'w-0'
+                  }`}
+                  style={{
+                    [ann.side === 'right' ? 'left' : 'right']: '0',
+                  }}
+                />
+
+                {/* Spec card */}
+                <div
+                  className={`absolute top-1/2 -translate-y-1/2 transition-all duration-500 delay-200 ${
+                    isActive ? 'opacity-100 translate-x-0' : 'opacity-0'
+                  } ${ann.side === 'right' ? '' : 'right-0'}`}
+                  style={{
+                    [ann.side === 'right' ? 'left' : 'right']: `${lineLength + 8}px`,
+                    transform: `translateY(-50%) ${
+                      isActive
+                        ? ''
+                        : ann.side === 'right'
+                        ? 'translateX(-20px)'
+                        : 'translateX(20px)'
+                    }`,
+                  }}
+                >
+                  <div className="bg-background/80 backdrop-blur-md border border-border/40 rounded-sm p-3 min-w-[200px] pointer-events-auto">
+                    <h4 className="text-xs font-mono-code text-primary tracking-wider uppercase mb-2">
+                      {ann.label}
+                    </h4>
+                    <div className="space-y-1.5">
+                      {specData.map((spec) => (
+                        <div key={spec.label} className="flex justify-between gap-4 text-[10px] font-mono-code">
+                          <span className="text-muted-foreground uppercase tracking-wider">{spec.label}</span>
+                          <span className="text-foreground font-medium">{spec.value}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         );
       })}

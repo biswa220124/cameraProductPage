@@ -1,0 +1,1 @@
+(async () = const puppeteer = require('puppeteer'); const browser = await puppeteer.launch(); const page = await browser.newPage(); page.on('console', msg = LOG:', msg.text())); page.on('pageerror', err = ERROR:', err.message)); await page.goto('http://localhost:8080/'); await new Promise(r =, 2000)); await browser.close(); })();  
