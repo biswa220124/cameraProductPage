@@ -4,7 +4,7 @@
 
 ## 🔗 Live Demo
 
-**Live URL:** [https://aurex-one.vercel.app](https://aurex-one.vercel.app)  
+**Live URL:** [https://camera-product-page-nine.vercel.app](https://camera-product-page-nine.vercel.app)  
 **GitHub Repository:** [https://github.com/yourusername/aurex-one](https://github.com/yourusername/aurex-one)
 
 ---
@@ -187,6 +187,8 @@ vercel
 ```
 
 3. Follow the prompts — Vercel will auto-detect Vite and configure the build.
+
+**Live URL:** https://camera-product-page-nine.vercel.app
 
 ### Environment Variables
 No environment variables are required for the demo/test mode.
