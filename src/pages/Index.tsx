@@ -264,17 +264,16 @@ export default function Index() {
       )}
 
       {/* Mobile/Tablet Fixed Feature Text (Top) */}
-      <div className={`fixed top-[15vh] inset-x-4 z-[90] pointer-events-none lg:hidden transition-all duration-500 ease-out ${
+      <div className={`fixed top-24 md:top-[15vh] inset-x-4 z-[90] pointer-events-none lg:hidden transition-all duration-500 ease-out flex justify-center ${
          activeSection > 0 && activeSection <= 6 && !isPastAnimation && !showWelcome ? 'opacity-100' : 'opacity-0'
       }`}>
          {activeSection > 0 && activeSection <= 6 && (
-            <div key={activeSection} className="animate-in fade-in slide-in-from-left-8 duration-700 ease-out text-center pt-2">
-               <span className="font-mono-code text-xs tracking-[0.4em] text-primary block mb-2">{sectionMeta[activeSection].num}</span>
-               <h3 className="text-2xl font-bold text-foreground mb-3">{sectionMeta[activeSection].title}</h3>
-               <p className="text-muted-foreground text-sm leading-relaxed max-w-[300px] mx-auto">
+            <div key={activeSection} className="animate-in fade-in slide-in-from-left-8 duration-700 ease-out text-center p-5 rounded-2xl bg-[#050505]/70 backdrop-blur-xl border border-white/[0.05] shadow-2xl max-w-sm w-full mx-auto">
+               <span className="font-mono-code text-[10px] tracking-[0.4em] text-primary block mb-1">{sectionMeta[activeSection].num}</span>
+               <h3 className="text-xl md:text-2xl font-bold text-foreground mb-2">{sectionMeta[activeSection].title}</h3>
+               <p className="text-muted-foreground text-xs md:text-sm leading-relaxed mx-auto">
                  {sectionMeta[activeSection].desc}
                </p>
-               <div className="mt-4 w-12 h-[1px] bg-primary/40 mx-auto" />
             </div>
          )}
       </div>

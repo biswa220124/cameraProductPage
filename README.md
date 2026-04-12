@@ -215,6 +215,8 @@ No environment variables are required for the demo/test mode.
 
 ---
 
-## 📄 License
+## 📄 Legal & Disclaimer
 
-This project is created for educational/assignment purposes.
+**Educational Purpose Only**: This project is created strictly for educational/assignment evaluation purposes. 
+
+**Copyright Disclosure**: The 3D camera render/image used in this project features a **Sony Alpha** series camera. All rights, trademarks, and copyrights associated with the camera design, logo, and brand belong solely to **Sony Corporation**. This project does not claim any ownership over these assets and is not affiliated with, endorsed by, or sponsored by Sony. No commercial use is intended.
