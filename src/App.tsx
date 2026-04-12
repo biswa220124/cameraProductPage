@@ -8,10 +8,13 @@ import Checkout from "./pages/Checkout.tsx";
 import TrackOrder from "./pages/TrackOrder.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
+import { Analytics } from "@vercel/analytics/react";
+
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <Analytics />
     <TooltipProvider>
       <Toaster />
       <Sonner />
