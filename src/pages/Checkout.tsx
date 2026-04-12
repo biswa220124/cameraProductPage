@@ -33,8 +33,7 @@ export default function Checkout() {
   const [sameAsShipping, setSameAsShipping] = useState(true);
 
   const [cartItems, setCartItems] = useState([
-    { id: 1, name: "AUREX ONE Body", desc: "Professional Mirrorless", specs: "Full-Frame • Stellar Black", price: 289990, img: cameraImg, qty: 1 },
-    { id: 2, name: "Premium Leather Half-Case", desc: "Handcrafted Leather", specs: "", price: 10990, img: "https://images.unsplash.com/photo-1544007380-4965adba2cf3?auto=format&fit=crop&q=80&w=150", qty: 1 }
+    { id: 1, name: "AUREX ONE Body", desc: "Professional Mirrorless", specs: "Full-Frame • Stellar Black", price: 289990, img: cameraImg, qty: 1 }
   ]);
 
   const handleRemoveItem = (id: number) => {
@@ -77,53 +76,30 @@ export default function Checkout() {
     setIsProcessing(true);
     
     try {
-        const orderResponse = await fetch('http://localhost:5000/create-order', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ items: cartItems, discountCode: appliedDiscount })
-        });
-        if (!orderResponse.ok) throw new Error("Failed to create order");
-        const orderData = await orderResponse.json();
-
         const options = {
             key: "rzp_test_ScRW13ONeYNHKj",
-            amount: orderData.amount,
-            currency: orderData.currency,
+            amount: total * 100, // amount in paise
+            currency: "INR",
             name: "AUREX ONE",
             description: "AUREX Checkout",
             image: cameraImg,
-            order_id: orderData.id,
-            handler: async function (response: any) {
-                setIsProcessing(true);
-                try {
-                    const verifyResponse = await fetch('http://localhost:5000/verify-payment', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(response)
-                    });
-                    if (verifyResponse.ok) {
-                        const finalAddress = sameAsShipping ? shipping : billing;
-                        
-                        const orderRecord = {
-                            orderId: orderData.id,
-                            paymentId: response.razorpay_payment_id,
-                            date: new Date().toISOString(),
-                            items: cartItems,
-                            total: total,
-                            customer: { ...customer, ...finalAddress },
-                            status: 'processing'
-                        };
-                        localStorage.setItem('aurex_latest_order', JSON.stringify(orderRecord));
-                        setOrderSuccess(true);
-                    } else {
-                        alert('Payment verification failed!');
-                    }
-                } catch (err) {
-                    console.error(err);
-                    alert("Verification error.");
-                } finally {
-                    setIsProcessing(false);
-                }
+            handler: function (response: any) {
+                // Client-side only integration for deployment demo
+                // We bypass backend verification since there's no deployed backend
+                const finalAddress = sameAsShipping ? shipping : billing;
+                
+                const orderRecord = {
+                    orderId: `order_guest_${Math.floor(Math.random()*1000000)}`,
+                    paymentId: response.razorpay_payment_id,
+                    date: new Date().toISOString(),
+                    items: cartItems,
+                    total: total,
+                    customer: { ...customer, ...finalAddress },
+                    status: 'processing'
+                };
+                localStorage.setItem('aurex_latest_order', JSON.stringify(orderRecord));
+                setOrderSuccess(true);
+                setIsProcessing(false);
             },
             prefill: {
                 name: customer.name,
