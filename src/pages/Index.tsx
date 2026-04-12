@@ -813,7 +813,7 @@ export default function Index() {
                     type="text" 
                     required 
                     className="w-full bg-white border border-gray-200 focus:border-primary/70 focus:ring-1 focus:ring-primary/70 outline-none px-4 py-3 rounded-sm transition-all text-sm text-black placeholder:text-gray-400"
-                    placeholder="Jane Doe"
+                    placeholder="Arjun Mehta"
                   />
                 </div>
                 <div>
@@ -822,7 +822,7 @@ export default function Index() {
                     type="email" 
                     required 
                     className="w-full bg-white border border-gray-200 focus:border-primary/70 focus:ring-1 focus:ring-primary/70 outline-none px-4 py-3 rounded-sm transition-all text-sm text-black placeholder:text-gray-400"
-                    placeholder="jane@example.com"
+                    placeholder="arjun.mehta@gmail.com"
                   />
                 </div>
               </div>

@@ -5,7 +5,7 @@
 ## 🔗 Live Demo
 
 **Live URL:** [https://camera-product-page-nine.vercel.app](https://camera-product-page-nine.vercel.app)  
-**GitHub Repository:** [https://github.com/yourusername/aurex-one](https://github.com/yourusername/aurex-one)
+**GitHub Repository:** [https://github.com/biswa220124/cameraProductPage](https://github.com/biswa220124/cameraProductPage)
 
 ---
 
