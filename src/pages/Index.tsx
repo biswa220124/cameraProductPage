@@ -156,10 +156,51 @@ export default function Index() {
     }
   };
 
-  const handleAddToCart = (name?: string) => {
-    setCartCount(prev => prev + 1);
+  useEffect(() => {
+    // Initialize cart count from shared local storage
+    const cartStr = localStorage.getItem('aurex_cart');
+    if (cartStr) {
+      try {
+        const parsed = JSON.parse(cartStr);
+        if (Array.isArray(parsed)) {
+          setCartCount(parsed.reduce((acc: number, c: any) => acc + c.qty, 0));
+        }
+      } catch(e) {}
+    }
+  }, []);
+
+  const handleAddToCart = (item: any) => {
     setActiveAccessory(null);
-    alert(`${name || 'Item'} added to cart!`);
+    
+    const cartStr = localStorage.getItem('aurex_cart');
+    let cart = [];
+    try { cart = cartStr ? JSON.parse(cartStr) : []; } catch(e) {}
+    
+    // If starting fresh, prepend the default camera
+    if (cart.length === 0) {
+        cart.push({ id: 1, name: "AUREX ONE Body", desc: "Professional Mirrorless", specs: "Full-Frame • Stellar Black", price: 289990, img: cameraImg, qty: 1 });
+    }
+    
+    const existingIdx = cart.findIndex((c: any) => c.name === item.name);
+    if (existingIdx !== -1) {
+        cart[existingIdx].qty += 1;
+    } else {
+        const priceNum = parseInt(item.price.replace(/[^\d]/g, ''), 10);
+        cart.push({
+            id: Date.now() + Math.random(),
+            name: item.name,
+            desc: "Premium Accessory",
+            specs: item.specs && item.specs[0] ? item.specs[0].value : "",
+            price: priceNum,
+            img: item.img,
+            qty: 1
+        });
+    }
+    
+    localStorage.setItem('aurex_cart', JSON.stringify(cart));
+    setCartCount(cart.reduce((acc: number, c: any) => acc + c.qty, 0));
+    
+    alert(`${item.name} added to cart!`);
   };
 
   useEffect(() => {
@@ -664,7 +705,7 @@ export default function Index() {
                 </ul>
                 
                 <button
-                  onClick={() => handleAddToCart(accessories[activeAccessory].name)}
+                  onClick={() => handleAddToCart(accessories[activeAccessory])}
                   className="w-full mt-6 py-3 bg-black text-white hover:bg-gray-800 text-xs font-bold uppercase tracking-widest transition-colors rounded-full cursor-pointer"
                 >
                   Add to Cart — {accessories[activeAccessory].price}

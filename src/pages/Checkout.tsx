@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Lock, CreditCard, Ticket, CheckCircle2, Truck } from 'lucide-react';
 import cameraImg from '@/assets/camera-main.png';
@@ -32,9 +32,23 @@ export default function Checkout() {
 
   const [sameAsShipping, setSameAsShipping] = useState(true);
 
-  const [cartItems, setCartItems] = useState([
-    { id: 1, name: "AUREX ONE Body", desc: "Professional Mirrorless", specs: "Full-Frame • Stellar Black", price: 289990, img: cameraImg, qty: 1 }
-  ]);
+  const [cartItems, setCartItems] = useState(() => {
+    const saved = localStorage.getItem('aurex_cart');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch(e) {}
+    }
+    return [
+      { id: 1, name: "AUREX ONE Body", desc: "Professional Mirrorless", specs: "Full-Frame • Stellar Black", price: 289990, img: cameraImg, qty: 1 }
+    ];
+  });
+
+  // Sync any checkout updates back to localStorage (e.g. quantity changes or removals)
+  useEffect(() => {
+    localStorage.setItem('aurex_cart', JSON.stringify(cartItems));
+  }, [cartItems]);
 
   const handleRemoveItem = (id: number) => {
     setCartItems(prev => prev.filter(item => item.id !== id));
