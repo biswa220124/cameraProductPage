@@ -11,16 +11,16 @@ export default function Checkout() {
   const [orderSuccess, setOrderSuccess] = useState(false);
 
   const [customer, setCustomer] = useState({ 
-      name: 'Rohan Sharma', 
-      email: 'rohan.sharma@example.com', 
-      phone: '9876543210', 
+      name: '', 
+      email: '', 
+      phone: '', 
   });
 
   const [shipping, setShipping] = useState({
-      address: 'Seawoods Estates, Nerul', 
+      address: '', 
       state: 'MH', 
-      city: 'Navi Mumbai', 
-      pincode: '400706' 
+      city: '', 
+      pincode: '' 
   });
 
   const [billing, setBilling] = useState({
@@ -87,6 +87,19 @@ export default function Checkout() {
         alert("Your cart is empty!");
         return;
     }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(customer.email)) {
+      alert("Please enter a valid email address.");
+      return;
+    }
+
+    const phoneRegex = /^\d{10}$/;
+    if (!phoneRegex.test(customer.phone)) {
+      alert("Please enter a valid 10-digit phone number.");
+      return;
+    }
+
     setIsProcessing(true);
     
     try {
@@ -339,15 +352,15 @@ export default function Checkout() {
                 <div className="space-y-5">
                   <div>
                     <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Full Name</label>
-                    <input required type="text" name="name" value={customer.name} onChange={handleCustomerChange} className="w-full bg-[#f8f9fa] border border-gray-200 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none px-4 py-3 rounded-lg transition-all text-sm font-medium text-black" />
+                    <input required type="text" name="name" value={customer.name} onChange={handleCustomerChange} placeholder="e.g. Rohan Sharma" className="w-full bg-[#f8f9fa] border border-gray-200 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none px-4 py-3 rounded-lg transition-all text-sm font-medium text-black placeholder:text-gray-400" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Email address</label>
-                    <input required type="email" name="email" value={customer.email} onChange={handleCustomerChange} className="w-full bg-[#f8f9fa] border border-gray-200 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none px-4 py-3 rounded-lg transition-all text-sm font-medium text-black" />
+                    <input required type="email" name="email" value={customer.email} onChange={handleCustomerChange} placeholder="e.g. rohan.sharma@example.com" className="w-full bg-[#f8f9fa] border border-gray-200 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none px-4 py-3 rounded-lg transition-all text-sm font-medium text-black placeholder:text-gray-400" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Phone Number</label>
-                    <input required type="tel" name="phone" value={customer.phone} onChange={handleCustomerChange} className="w-full bg-[#f8f9fa] border border-gray-200 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none px-4 py-3 rounded-lg transition-all text-sm font-medium text-black" />
+                    <input required type="tel" name="phone" value={customer.phone} onChange={handleCustomerChange} placeholder="e.g. 9876543210" className="w-full bg-[#f8f9fa] border border-gray-200 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none px-4 py-3 rounded-lg transition-all text-sm font-medium text-black placeholder:text-gray-400" />
                   </div>
                 </div>
             </section>
