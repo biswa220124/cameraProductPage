@@ -165,15 +165,31 @@ export default function Checkout() {
 
   if (orderSuccess) {
       return (
-          <div className="min-h-screen bg-[#f8f9fa] text-black flex flex-col items-center justify-center p-4">
-             <div className="w-24 h-24 bg-green-100 border border-green-200 rounded-full flex items-center justify-center animate-bounce mb-8 shadow-xl">
-                 <CheckCircle2 className="w-12 h-12 text-green-500" />
+          <div className="min-h-screen bg-[#f8f9fa] text-black flex flex-col items-center justify-center p-4 relative overflow-hidden">
+             
+             {/* Ripple layer */}
+             <div className="absolute inset-0 flex items-center justify-center z-0 pointer-events-none">
+                <div className="w-4 h-4 bg-green-500 rounded-full animate-ripple-spread" />
              </div>
-             <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tighter text-center">Payment Successful!</h1>
-             <p className="text-gray-500 mb-10 text-center max-w-sm">Your precision gear order has been placed securely. We are preparing it for domestic shipment.</p>
-             <button onClick={() => navigate('/track-order')} className="px-8 py-3 bg-orange-500 text-white rounded-md font-medium hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/30">
-                Track Your Order
-             </button>
+
+             {/* Content layer */}
+             <div className="z-10 flex flex-col items-center">
+               <div className="animate-in fade-in zoom-in duration-500 fill-mode-both mb-8">
+                 <div className="w-24 h-24 bg-green-100 border border-green-200 rounded-full flex items-center justify-center shadow-xl">
+                     <svg className="w-12 h-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                       <path className="animate-draw-tick" d="M5 13l4 4L19 7" />
+                     </svg>
+                 </div>
+               </div>
+
+               <div className="flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both" style={{ animationDelay: '1.8s' }}>
+                 <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tighter text-center">Payment Successful!</h1>
+                 <p className="text-gray-500 mb-10 text-center max-w-sm">Your precision gear order has been placed securely. We are preparing it for domestic shipment.</p>
+                 <button onClick={() => navigate('/track-order')} className="px-8 py-3 bg-orange-500 text-white rounded-md font-medium hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/30">
+                    Track Your Order
+                 </button>
+               </div>
+             </div>
           </div>
       );
   }
