@@ -148,10 +148,11 @@ Analytics are automatically activated upon Vercel deployment — no additional A
 - **Scroll-driven 3D camera animation** — 6 camera components highlighted with annotations
 - **Technical specifications** sheet with 6 data categories
 - **Accessories section** — 5 products with popup detail modals and Add to Cart
-- **Testimonials carousel** — 7 real customer reviews
-- **Contact form** with field validation
+- **Testimonials carousel** — 7 customer reviews
+- **Contact form**- Just Impleneted the frontend backend is not connected
 - **Photo gallery** — "Captured by Our Community" section with parallax
 - **Responsive design** — optimized for mobile, tablet, and desktop
+- **Footer Section**- Many options are just static but can be connected to backend for realworld use
 
 ### Mobile-Specific
 - Fixed feature text animation (left-to-right slide instead of vertical)
