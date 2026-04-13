@@ -3,6 +3,25 @@ import { useNavigate } from 'react-router-dom';
 import { X, Lock, CreditCard, Ticket, CheckCircle2, Truck } from 'lucide-react';
 import cameraImg from '@/assets/camera-main.png';
 
+const INDIAN_CITIES = [
+  "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Ahmedabad", "Chennai", "Kolkata", 
+  "Surat", "Pune", "Jaipur", "Lucknow", "Kanpur", "Nagpur", "Indore", "Thane", 
+  "Bhopal", "Visakhapatnam", "Pimpri-Chinchwad", "Patna", "Vadodara", "Ghaziabad", 
+  "Ludhiana", "Agra", "Nashik", "Faridabad", "Meerut", "Rajkot", "Kalyan-Dombivli", 
+  "Vasai-Virar", "Varanasi", "Srinagar", "Aurangabad", "Dhanbad", "Amritsar", 
+  "Navi Mumbai", "Allahabad", "Ranchi", "Howrah", "Coimbatore", "Jabalpur", 
+  "Gwalior", "Vijayawada", "Jodhpur", "Madurai", "Raipur", "Kota", "Guwahati", 
+  "Chandigarh", "Solapur", "Hubballi-Dharwad", "Mysuru", "Tiruchirappalli", 
+  "Bareilly", "Aligarh", "Tiruppur", "Gurgaon", "Moradabad", "Jalandhar", 
+  "Bhubaneswar", "Salem", "Warangal", "Mira-Bhayandar", "Jalgaon", "Guntur", 
+  "Thiruvananthapuram", "Bhiwandi", "Saharanpur", "Gorakhpur", "Bikaner", "Amravati", 
+  "Noida", "Jamshedpur", "Bhilai", "Cuttack", "Firozabad", "Kochi", "Nellore", 
+  "Bhavnagar", "Dehradun", "Durgapur", "Asansol", "Rourkela", "Nanded", "Kolhapur", 
+  "Ajmer", "Akola", "Gulbarga", "Jamnagar", "Ujjain", "Loni", "Siliguri", "Jhansi", 
+  "Ulhasnagar", "Jammu", "Sangli-Miraj & Kupwad", "Mangalore", "Erode", "Belgaum", 
+  "Ambattur", "Tirunelveli", "Malegaon", "Gaya", "Jalgaon", "Udaipur", "Maheshtala"
+].sort();
+
 export default function Checkout() {
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -209,7 +228,9 @@ export default function Checkout() {
 
   return (
     <div className="min-h-screen bg-[#f1f3f5] text-gray-900 selection:bg-orange-500/20 flex justify-center py-10 md:py-16 px-4 font-sans tracking-tight">
-      
+      <datalist id="indian-cities">
+        {INDIAN_CITIES.map(city => <option key={city} value={city} />)}
+      </datalist>
       <div className="w-full max-w-[1100px] bg-white rounded-2xl border border-gray-200 shadow-2xl overflow-hidden flex flex-col md:flex-row">
         
         {/* Left Column: Order Summary */}
@@ -379,7 +400,7 @@ export default function Checkout() {
                       <div className="flex flex-col text-sm font-medium text-black">
                           <input required type="text" name="address" placeholder="Address line 1" value={shipping.address} onChange={handleShippingChange} className="border-b border-gray-200 bg-transparent outline-none px-4 py-3 text-black focus:bg-white transition-colors" />
                           <div className="flex border-b border-gray-200">
-                            <input required type="text" name="city" placeholder="City" value={shipping.city} onChange={handleShippingChange} className="w-1/2 border-r border-gray-200 bg-transparent outline-none px-4 py-3 text-black focus:bg-white transition-colors" />
+                            <input required type="text" name="city" list="indian-cities" autoComplete="off" placeholder="City" value={shipping.city} onChange={handleShippingChange} className="w-1/2 border-r border-gray-200 bg-transparent outline-none px-4 py-3 text-black focus:bg-white transition-colors" />
                             <select name="state" value={shipping.state} onChange={handleShippingChange} className="w-1/2 bg-transparent outline-none px-4 py-3 text-black focus:bg-white transition-colors appearance-none cursor-pointer">
                                 <option value="MH">Maharashtra</option>
                                 <option value="DL">Delhi</option>
@@ -418,7 +439,7 @@ export default function Checkout() {
                           <div className="flex flex-col text-sm font-medium text-black">
                               <input required type="text" name="address" placeholder="Address line 1" value={billing.address} onChange={handleBillingChange} className="border-b border-gray-200 bg-transparent outline-none px-4 py-3 text-black focus:bg-white transition-colors" />
                               <div className="flex border-b border-gray-200">
-                                <input required type="text" name="city" placeholder="City" value={billing.city} onChange={handleBillingChange} className="w-1/2 border-r border-gray-200 bg-transparent outline-none px-4 py-3 text-black focus:bg-white transition-colors" />
+                                <input required type="text" name="city" list="indian-cities" autoComplete="off" placeholder="City" value={billing.city} onChange={handleBillingChange} className="w-1/2 border-r border-gray-200 bg-transparent outline-none px-4 py-3 text-black focus:bg-white transition-colors" />
                                 <select name="state" value={billing.state} onChange={handleBillingChange} className="w-1/2 bg-transparent outline-none px-4 py-3 text-black focus:bg-white transition-colors appearance-none cursor-pointer">
                                     <option value="MH">Maharashtra</option>
                                     <option value="DL">Delhi</option>
