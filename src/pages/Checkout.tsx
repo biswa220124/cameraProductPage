@@ -4,23 +4,47 @@ import { X, Lock, CreditCard, Ticket, CheckCircle2, Truck } from 'lucide-react';
 import cameraImg from '@/assets/camera-main.png';
 
 const INDIAN_CITIES = [
-  "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Ahmedabad", "Chennai", "Kolkata", 
-  "Surat", "Pune", "Jaipur", "Lucknow", "Kanpur", "Nagpur", "Indore", "Thane", 
-  "Bhopal", "Visakhapatnam", "Pimpri-Chinchwad", "Patna", "Vadodara", "Ghaziabad", 
-  "Ludhiana", "Agra", "Nashik", "Faridabad", "Meerut", "Rajkot", "Kalyan-Dombivli", 
-  "Vasai-Virar", "Varanasi", "Srinagar", "Aurangabad", "Dhanbad", "Amritsar", 
-  "Navi Mumbai", "Allahabad", "Ranchi", "Howrah", "Coimbatore", "Jabalpur", 
-  "Gwalior", "Vijayawada", "Jodhpur", "Madurai", "Raipur", "Kota", "Guwahati", 
-  "Chandigarh", "Solapur", "Hubballi-Dharwad", "Mysuru", "Tiruchirappalli", 
-  "Bareilly", "Aligarh", "Tiruppur", "Gurgaon", "Moradabad", "Jalandhar", 
-  "Bhubaneswar", "Salem", "Warangal", "Mira-Bhayandar", "Jalgaon", "Guntur", 
-  "Thiruvananthapuram", "Bhiwandi", "Saharanpur", "Gorakhpur", "Bikaner", "Amravati", 
-  "Noida", "Jamshedpur", "Bhilai", "Cuttack", "Firozabad", "Kochi", "Nellore", 
-  "Bhavnagar", "Dehradun", "Durgapur", "Asansol", "Rourkela", "Nanded", "Kolhapur", 
-  "Ajmer", "Akola", "Gulbarga", "Jamnagar", "Ujjain", "Loni", "Siliguri", "Jhansi", 
-  "Ulhasnagar", "Jammu", "Sangli-Miraj & Kupwad", "Mangalore", "Erode", "Belgaum", 
-  "Ambattur", "Tirunelveli", "Malegaon", "Gaya", "Jalgaon", "Udaipur", "Maheshtala"
-].sort();
+  "Ahmedabad", "Bangalore", "Chennai", "Delhi", "Hyderabad", "Jaipur", "Kolkata", "Mumbai", "Pune", "Surat"
+];
+
+const INDIAN_STATES = [
+  { code: 'AN', name: 'Andaman and Nicobar Islands' },
+  { code: 'AP', name: 'Andhra Pradesh' },
+  { code: 'AR', name: 'Arunachal Pradesh' },
+  { code: 'AS', name: 'Assam' },
+  { code: 'BR', name: 'Bihar' },
+  { code: 'CH', name: 'Chandigarh' },
+  { code: 'CG', name: 'Chhattisgarh' },
+  { code: 'DN', name: 'Dadra & Nagar Haveli & Daman & Diu' },
+  { code: 'DL', name: 'Delhi' },
+  { code: 'GA', name: 'Goa' },
+  { code: 'GJ', name: 'Gujarat' },
+  { code: 'HR', name: 'Haryana' },
+  { code: 'HP', name: 'Himachal Pradesh' },
+  { code: 'JK', name: 'Jammu and Kashmir' },
+  { code: 'JH', name: 'Jharkhand' },
+  { code: 'KA', name: 'Karnataka' },
+  { code: 'KL', name: 'Kerala' },
+  { code: 'LA', name: 'Ladakh' },
+  { code: 'LD', name: 'Lakshadweep' },
+  { code: 'MP', name: 'Madhya Pradesh' },
+  { code: 'MH', name: 'Maharashtra' },
+  { code: 'MN', name: 'Manipur' },
+  { code: 'ML', name: 'Meghalaya' },
+  { code: 'MZ', name: 'Mizoram' },
+  { code: 'NL', name: 'Nagaland' },
+  { code: 'OR', name: 'Odisha' },
+  { code: 'PY', name: 'Puducherry' },
+  { code: 'PB', name: 'Punjab' },
+  { code: 'RJ', name: 'Rajasthan' },
+  { code: 'SK', name: 'Sikkim' },
+  { code: 'TN', name: 'Tamil Nadu' },
+  { code: 'TS', name: 'Telangana' },
+  { code: 'TR', name: 'Tripura' },
+  { code: 'UP', name: 'Uttar Pradesh' },
+  { code: 'UK', name: 'Uttarakhand' },
+  { code: 'WB', name: 'West Bengal' }
+];
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -402,13 +426,9 @@ export default function Checkout() {
                           <div className="flex border-b border-gray-200">
                             <input required type="text" name="city" list="indian-cities" autoComplete="off" placeholder="City" value={shipping.city} onChange={handleShippingChange} className="w-1/2 border-r border-gray-200 bg-transparent outline-none px-4 py-3 text-black focus:bg-white transition-colors" />
                             <select name="state" value={shipping.state} onChange={handleShippingChange} className="w-1/2 bg-transparent outline-none px-4 py-3 text-black focus:bg-white transition-colors appearance-none cursor-pointer">
-                                <option value="MH">Maharashtra</option>
-                                <option value="DL">Delhi</option>
-                                <option value="KA">Karnataka</option>
-                                <option value="TN">Tamil Nadu</option>
-                                <option value="WB">West Bengal</option>
-                                <option value="RJ">Rajasthan</option>
-                                <option value="GJ">Gujarat</option>
+                                {INDIAN_STATES.map(state => (
+                                    <option key={state.code} value={state.code}>{state.name}</option>
+                                ))}
                             </select>
                           </div>
                           <input required type="text" name="pincode" placeholder="PIN Code" value={shipping.pincode} onChange={handleShippingChange} className="bg-transparent outline-none px-4 py-3 text-black focus:bg-white transition-colors" />
@@ -441,13 +461,9 @@ export default function Checkout() {
                               <div className="flex border-b border-gray-200">
                                 <input required type="text" name="city" list="indian-cities" autoComplete="off" placeholder="City" value={billing.city} onChange={handleBillingChange} className="w-1/2 border-r border-gray-200 bg-transparent outline-none px-4 py-3 text-black focus:bg-white transition-colors" />
                                 <select name="state" value={billing.state} onChange={handleBillingChange} className="w-1/2 bg-transparent outline-none px-4 py-3 text-black focus:bg-white transition-colors appearance-none cursor-pointer">
-                                    <option value="MH">Maharashtra</option>
-                                    <option value="DL">Delhi</option>
-                                    <option value="KA">Karnataka</option>
-                                    <option value="TN">Tamil Nadu</option>
-                                    <option value="WB">West Bengal</option>
-                                    <option value="RJ">Rajasthan</option>
-                                    <option value="GJ">Gujarat</option>
+                                    {INDIAN_STATES.map(state => (
+                                        <option key={state.code} value={state.code}>{state.name}</option>
+                                    ))}
                                 </select>
                               </div>
                               <input required type="text" name="pincode" placeholder="PIN Code" value={billing.pincode} onChange={handleBillingChange} className="bg-transparent outline-none px-4 py-3 text-black focus:bg-white transition-colors" />
